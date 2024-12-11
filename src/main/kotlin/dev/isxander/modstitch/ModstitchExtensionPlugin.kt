@@ -28,7 +28,7 @@ open class ModstitchExtensionPlugin(
         val unselectedPlatforms = platforms.values - platformPlugin
 
         if (target.platformOrNull != null && target.platformOrNull != selectedPlatform) {
-            error("Multistitch: ${target.platform} has already been assigned platform `${target.platformOrNull}` but extension `$name` is trying to assign platform `$selectedPlatform`")
+            error("Multistitch: ${target.name} has already been assigned platform `${target.platformOrNull}` but extension `$name` is trying to assign platform `$selectedPlatform`")
         }
         target.platform = selectedPlatform
 

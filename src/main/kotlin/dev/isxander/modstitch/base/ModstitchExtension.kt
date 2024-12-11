@@ -41,6 +41,7 @@ interface ModstitchExtension {
     fun neoforge(action: Action<BaseNeoForgeExtension>)
 }
 
+@Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
 open class ModstitchExtensionImpl @Inject constructor(objects: ObjectFactory, private val project: Project, private val remapConfigurations: RemapConfigurations) : ModstitchExtension {
     // General setup for the mod environment.
     override val minecraftVersion = objects.property<String>()
@@ -107,6 +108,8 @@ interface MetadataBlock {
     val modDescription: Property<String>
     val modLicense: Property<String>
     val modGroup: Property<String>
+    val modAuthor: Property<String>
+    val modCredits: Property<String>
     val replacementProperties: MapProperty<String, String>
 }
 open class MetadataBlockImpl @Inject constructor(objects: ObjectFactory) : MetadataBlock {
@@ -117,6 +120,8 @@ open class MetadataBlockImpl @Inject constructor(objects: ObjectFactory) : Metad
     override val modDescription = objects.property<String>().convention("")
     override val modLicense = objects.property<String>().convention("All Rights Reserved")
     override val modGroup = objects.property<String>().convention("com.example")
+    override val modAuthor = objects.property<String>().convention("")
+    override val modCredits = objects.property<String>().convention("")
     override val replacementProperties = objects.mapProperty<String, String>().convention(emptyMap())
 }
 

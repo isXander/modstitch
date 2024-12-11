@@ -37,11 +37,11 @@ gradlePlugin {
     }
 
     // Creates:
-    // - dev.isxander.modstitch.base (dev.isxander.modstitch.base.BaseApplicatorPlugin)
-    // - dev.isxander.modstitch.base.fabric (dev.isxander.modstitch.base.BaseFabricImplPlugin)
-    // - dev.isxander.modstitch.base.neoforge (dev.isxander.modstitch.base.BaseNeoforgeImplPlugin)
+    // - dev.isxander.modstitch.base (dev.isxander.modstitch.base.BasePlugin)
+    // - dev.isxander.modstitch.base.fabric (dev.isxander.modstitch.base.fabric.BaseFabricPlugin)
+    // - dev.isxander.modstitch.base.neoforge (dev.isxander.modstitch.base.neoforge.BaseNeoforgePlugin)
     registerExtension("base", platforms = listOf("fabric", "neoforge"))
-    //registerExtension("publishing", platforms = listOf("fabric", "neoforge"))
+    registerExtension("publishing", platforms = listOf("fabric", "neoforge"))
 }
 
 dependencies {

@@ -1,6 +1,6 @@
 plugins {
     id("dev.isxander.modstitch.base")
-    //id("dev.isxander.modstitch.publishing")
+    id("dev.isxander.modstitch.publishing")
 }
 
 modstitch {
@@ -24,20 +24,19 @@ modstitch {
     }
 }
 
-//msPublishing {
-//    maven {
-//
-//        repositories {
-//
-//        }
-//    }
-//
-//    mpp {
-//        type = STABLE
-//
-//        modrinth {
-//            accessToken = findProperty("pub.modrinth.token") as String?
-//            projectId = "12345678"
-//        }
-//    }
-//}
+msPublishing {
+    maven {
+        repositories {
+            mavenLocal()
+        }
+    }
+
+    mpp {
+        type = STABLE
+
+        modrinth {
+            accessToken = findProperty("pub.modrinth.token") as String?
+            projectId = "12345678"
+        }
+    }
+}

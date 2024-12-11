@@ -106,6 +106,9 @@ abstract class BaseCommonImpl<T : Any>(
                 "mod_id" to manifest.modId,
                 "mod_license" to manifest.modLicense,
                 "mod_description" to manifest.modDescription,
+                "mod_group" to manifest.modGroup,
+                "mod_author" to manifest.modAuthor,
+                "mod_credits" to manifest.modCredits,
             )
 
             // Combine the lazy-valued base properties with the replacement properties, lazily
