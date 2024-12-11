@@ -7,8 +7,8 @@ import org.gradle.api.Project
 typealias ExtensionPlatforms = Map<Platform, PlatformPlugin<*>>
 
 open class ModstitchExtensionPlugin(
-    val name: String,
-    val platforms: Map<Platform, PlatformPlugin<*>>,
+    private val name: String,
+    private val platforms: ExtensionPlatforms,
     val platform: Platform? = null
 ) : Plugin<Project> {
     override fun apply(target: Project) {
@@ -28,7 +28,7 @@ open class ModstitchExtensionPlugin(
         val unselectedPlatforms = platforms.values - platformPlugin
 
         if (target.platformOrNull != null && target.platformOrNull != selectedPlatform) {
-            error("Multistitch: ${target.name} has already been assigned platform `${target.platformOrNull}` but extension `$name` is trying to assign platform `$selectedPlatform`")
+            error("Modstitch: ${target.name} has already been assigned platform `${target.platformOrNull}` but extension `$name` is trying to assign platform `$selectedPlatform`")
         }
         target.platform = selectedPlatform
 
