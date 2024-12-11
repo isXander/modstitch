@@ -12,19 +12,19 @@ open class ModstitchExtensionPlugin(
     val platform: Platform? = null
 ) : Plugin<Project> {
     override fun apply(target: Project) {
-        apply(target, platform ?: getDesiredLoaderFromProperty(target))
+        apply(target, platform ?: getDesiredPlatformFromProperty(target))
     }
 
-    private fun getDesiredLoaderFromProperty(target: Project): Platform {
-        val desiredLoaderStr = target.findProperty("modstitch.loader")?.toString()
-            ?: error("Project `${target.name}` is missing 'modstitch.loader' property. Cannot apply ")
-        return Platform.fromSerialName(desiredLoaderStr)
-            ?: error("Unknown loader on project `${target.name}`: $desiredLoaderStr")
+    private fun getDesiredPlatformFromProperty(target: Project): Platform {
+        val desiredPlatformStr = target.findProperty("modstitch.platform")?.toString()
+            ?: error("Project `${target.name}` is missing 'modstitch.platform' property. Cannot apply ")
+        return Platform.fromSerialName(desiredPlatformStr)
+            ?: error("Unknown platform on project `${target.name}`: $desiredPlatformStr")
     }
 
     private fun apply(target: Project, selectedPlatform: Platform) {
         val platformPlugin = platforms[selectedPlatform]
-            ?: error("No platform plugin found for loader $selectedPlatform")
+            ?: error("This plugin does not support the platform `$selectedPlatform`. Supported platforms: ${platforms.keys.joinToString(", ") { it.friendlyName }}")
         val unselectedPlatforms = platforms.values - platformPlugin
 
         if (target.platformOrNull != null && target.platformOrNull != selectedPlatform) {
