@@ -1,22 +1,24 @@
-package dev.isxander.modstitch.base.fabric
+package dev.isxander.modstitch.base.loom
 
 import dev.isxander.modstitch.base.BaseCommonImpl
-import dev.isxander.modstitch.base.RemapConfigurations
 import dev.isxander.modstitch.base.modstitch
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
+import dev.isxander.modstitch.util.addCamelCasePrefix
+import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 
-object BaseFabricImpl : BaseCommonImpl<BaseFabricExtension>(Platform.Fabric) {
+object BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
     override val platformExtensionInfo = PlatformExtensionInfo(
-        "fabric",
-        BaseFabricExtension::class,
-        BaseFabricExtensionImpl::class,
-        BaseFabricExtensionDummy::class
+        "msLoom",
+        BaseLoomExtension::class,
+        BaseLoomExtensionImpl::class,
+        BaseLoomExtensionDummy::class
     )
 
     override fun apply(target: Project) {
@@ -34,7 +36,7 @@ object BaseFabricImpl : BaseCommonImpl<BaseFabricExtension>(Platform.Fabric) {
 
         target.afterEvaluate {
             if (target.modstitch.parchment.enabled.get()) {
-                error("Parchment is not supported on Fabric yet.")
+                error("Parchment is not supported on Loom yet.")
             }
         }
     }
@@ -54,10 +56,24 @@ object BaseFabricImpl : BaseCommonImpl<BaseFabricExtension>(Platform.Fabric) {
         return generateModMetadata
     }
 
-    override val remapConfigurations = RemapConfigurations(
-        implementation = { named("modImplementation") },
-        compileOnly = { named("modCompileOnly") },
-        runtimeOnly = { named("modRuntimeOnly") },
-        localRuntime = { named("modLocalRuntime") },
-    )
+    override fun createProxyConfigurations(target: Project, configuration: Configuration) {
+        val remapConfiguration = target.loom.remapConfigurations
+            .find { it.targetConfigurationName.get() == configuration.name }
+            ?: error("Loom has not created a remap configuration for ${configuration.name}, modstitch cannot proxy it.")
+
+        val proxyModConfigurationName = configuration.name.addCamelCasePrefix("modstitchMod")
+        val proxyRegularConfigurationName = configuration.name.addCamelCasePrefix("modstitch")
+
+        target.configurations.create(proxyModConfigurationName) proxy@{
+            target.configurations.named(remapConfiguration.name) {
+                extendsFrom(this@proxy)
+            }
+        }
+        target.configurations.create(proxyRegularConfigurationName) proxy@{
+            configuration.extendsFrom(this@proxy)
+        }
+    }
+
+    private val Project.loom: LoomGradleExtensionAPI
+        get() = extensions.getByType<LoomGradleExtensionAPI>()
 }

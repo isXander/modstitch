@@ -15,14 +15,23 @@ modstitch {
         modDescription = "A test project for ModStitch"
     }
 
-    fabric {
+    msLoom {
         fabricLoaderVersion = "0.16.9"
     }
 
-    neoforge {
+    msModdevgradle {
         neoForgeVersion = "21.4.10-beta"
     }
 }
+
+dependencies {
+    modstitch.msLoom {
+        "modstitchModImplementation"("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.3")
+    }
+
+    "modstitchImplementation"("org.commonmark:commonmark:0.21.0")
+}
+
 
 msPublishing {
     maven {
@@ -38,5 +47,7 @@ msPublishing {
             accessToken = findProperty("pub.modrinth.token") as String?
             projectId = "12345678"
         }
+
+        dryRun = true
     }
 }

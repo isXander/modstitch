@@ -19,7 +19,7 @@ open class ModstitchExtensionPlugin(
         val desiredPlatformStr = target.findProperty("modstitch.platform")?.toString()
             ?: error("Project `${target.name}` is missing 'modstitch.platform' property. Cannot apply ")
         return Platform.fromSerialName(desiredPlatformStr)
-            ?: error("Unknown platform on project `${target.name}`: $desiredPlatformStr")
+            ?: error("Unknown platform on project `${target.name}`: '$desiredPlatformStr'. Options are: ${Platform.values().joinToString(", ") { it.friendlyName }}")
     }
 
     private fun apply(target: Project, selectedPlatform: Platform) {

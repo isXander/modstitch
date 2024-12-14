@@ -1,7 +1,7 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
-    `maven-publish`
+    id("com.gradle.plugin-publish") version "1.3.0"
     idea
 }
 
@@ -20,28 +20,40 @@ fun String.capitalize(): String {
 }
 
 gradlePlugin {
-    fun registerExtension(extensionId: String, platforms: List<String> = listOf("fabric", "neoforge")) {
+    website = "https://github.com/isXander/modstitch"
+    vcsUrl = "https://github.com/isXander/modstitch.git"
+    val pluginTags = listOf("modstitch", "minecraft", "mod")
+
+    fun registerExtension(extensionId: String, platforms: List<String> = listOf("fabric", "neoforge"), description: String) {
         val extensionCapitalised = extensionId.capitalize()
 
         plugins.create(extensionId) {
             id = "dev.isxander.modstitch.$extensionId"
             implementationClass = "dev.isxander.modstitch.$extensionId.${extensionCapitalised}Plugin"
+
+            displayName = "ModStitch $extensionCapitalised"
+            this.description = description
+            tags = pluginTags
         }
 
         for (platform in platforms) {
             plugins.create("$extensionId.$platform") {
                 id = "dev.isxander.modstitch.$extensionId.$platform"
                 implementationClass = "dev.isxander.modstitch.$extensionId.$platform.${extensionCapitalised}${platform.capitalize()}Plugin"
+
+                displayName = "ModStitch $extensionCapitalised for $platform platform"
+                this.description = "The '$platform' platform implementation of ModStitch $extensionCapitalised"
+                tags = pluginTags
             }
         }
     }
 
     // Creates:
     // - dev.isxander.modstitch.base (dev.isxander.modstitch.base.BasePlugin)
-    // - dev.isxander.modstitch.base.fabric (dev.isxander.modstitch.base.fabric.BaseFabricPlugin)
-    // - dev.isxander.modstitch.base.neoforge (dev.isxander.modstitch.base.neoforge.BaseNeoforgePlugin)
-    registerExtension("base", platforms = listOf("fabric", "neoforge"))
-    registerExtension("publishing", platforms = listOf("fabric", "neoforge"))
+    // - dev.isxander.modstitch.base.loom (dev.isxander.modstitch.base.fabric.BaseLoomPlugin)
+    // - dev.isxander.modstitch.base.moddevgradle (dev.isxander.modstitch.base.moddevgradle.BaseModdevgradlePlugin)
+    registerExtension("base", platforms = listOf("loom", "moddevgradle"), description = "The base plugin for ModStitch")
+    registerExtension("publishing", platforms = listOf("loom", "moddevgradle"), description = "Adds mod publishing functionality to ModStitch")
 }
 
 dependencies {

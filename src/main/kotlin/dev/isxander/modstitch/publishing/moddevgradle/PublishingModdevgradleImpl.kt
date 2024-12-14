@@ -1,13 +1,12 @@
-package dev.isxander.modstitch.publishing.neoforge
+package dev.isxander.modstitch.publishing.moddevgradle
 
 import dev.isxander.modstitch.publishing.PublishingCommonImpl
 import dev.isxander.modstitch.publishing.msPublishing
 import org.gradle.api.Project
 import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.assign
-import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.*
 
-object PublishingNeoforgeImpl : PublishingCommonImpl<Nothing>() {
+object PublishingModdevgradleImpl : PublishingCommonImpl<Nothing>() {
     override fun apply(target: Project) {
         super.apply(target)
 

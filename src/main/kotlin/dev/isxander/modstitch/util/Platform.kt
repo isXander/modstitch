@@ -3,8 +3,8 @@ package dev.isxander.modstitch.util
 import org.gradle.api.Project
 
 enum class Platform(val friendlyName: String, val modManifest: String) {
-    Fabric("fabric", "fabric.mod.json"),
-    NeoForge("neoforge", "META-INF/neoforge.mods.toml");
+    Loom("loom", "fabric.mod.json"),
+    ModDevGradle("moddevgradle", "META-INF/neoforge.mods.toml");
 
     companion object {
         val allModManifests = values().map { it.modManifest }
@@ -24,7 +24,7 @@ var Project.platform: Platform
         project.extensions.extraProperties["appliedPlatform"] = value.friendlyName
     }
 
-val Project.isFabric: Boolean
-    get() = platform == Platform.Fabric
-val Project.isNeoForge: Boolean
-    get() = platform == Platform.NeoForge
+val Project.isLoom: Boolean
+    get() = platform == Platform.Loom
+val Project.isModDevGradle: Boolean
+    get() = platform == Platform.ModDevGradle

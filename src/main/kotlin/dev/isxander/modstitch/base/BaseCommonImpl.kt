@@ -3,11 +3,14 @@ package dev.isxander.modstitch.base
 import dev.isxander.modstitch.*
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.platform
+import net.fabricmc.loom.util.Constants
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
@@ -28,11 +31,12 @@ abstract class BaseCommonImpl<T : Any>(
         target.pluginManager.apply("idea")
 
         // Create our plugin extension
+        val proxyConfigCreator: (Configuration) -> Unit = { createProxyConfigurations(target, it) }
         val msExt = target.extensions.create(
             ModstitchExtension::class.java,
             "modstitch",
             ModstitchExtensionImpl::class.java,
-            remapConfigurations
+            this,
         )
 
         // Ensure the archivesBaseName is our mod-id
@@ -66,6 +70,8 @@ abstract class BaseCommonImpl<T : Any>(
         applyJavaSettings(target)
 
         applyMetadataStringReplacements(target)
+
+        createProxyConfigurations(target, target.extensions.getByType<SourceSetContainer>().getByName(SourceSet.MAIN_SOURCE_SET_NAME))
     }
 
     /**
@@ -141,10 +147,21 @@ abstract class BaseCommonImpl<T : Any>(
         return generateModMetadata
     }
 
-    protected open val remapConfigurations = RemapConfigurations(
-        implementation = { named("implementation") },
-        compileOnly = { named("compileOnly") },
-        runtimeOnly = { named("runtimeOnly") },
-        localRuntime = { named("localRuntime") },
-    )
+    fun createProxyConfigurations(target: Project, sourceSet: SourceSet) {
+        fun mainOnly(configurationName: String): String? =
+            configurationName.takeIf { sourceSet.name == SourceSet.MAIN_SOURCE_SET_NAME }
+
+        listOfNotNull(
+            mainOnly(sourceSet.apiConfigurationName),
+            sourceSet.implementationConfigurationName,
+            sourceSet.compileOnlyConfigurationName,
+            sourceSet.runtimeOnlyConfigurationName,
+            mainOnly(sourceSet.compileOnlyApiConfigurationName),
+            mainOnly(Constants.Configurations.LOCAL_RUNTIME),
+        ).forEach {
+            createProxyConfigurations(target, target.configurations.getByName(it))
+        }
+    }
+    abstract fun createProxyConfigurations(target: Project, configuration: Configuration)
+
 }

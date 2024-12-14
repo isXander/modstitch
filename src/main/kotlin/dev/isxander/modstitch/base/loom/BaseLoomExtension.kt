@@ -1,4 +1,4 @@
-package dev.isxander.modstitch.base.fabric
+package dev.isxander.modstitch.base.loom
 
 /**
  * The extension for configuring Fabric-specific settings.
@@ -6,7 +6,7 @@ package dev.isxander.modstitch.base.fabric
 
 import dev.isxander.modstitch.PlatformExtension
 import dev.isxander.modstitch.util.NotExistsDelegate
-import dev.isxander.modstitch.util.isFabric
+import dev.isxander.modstitch.util.isLoom
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -15,34 +15,35 @@ import org.gradle.api.provider.Property
 import org.gradle.kotlin.dsl.*
 import javax.inject.Inject
 
-interface BaseFabricExtension : PlatformExtension<BaseFabricExtension> {
+interface BaseLoomExtension : PlatformExtension<BaseLoomExtension> {
     val fabricLoaderVersion: Property<String>
 
     val loom: LoomGradleExtensionAPI
     fun loom(action: Action<LoomGradleExtensionAPI>) = action.execute(loom)
 }
 
-open class BaseFabricExtensionImpl @Inject constructor(objects: ObjectFactory, private val project: Project) : BaseFabricExtension {
+open class BaseLoomExtensionImpl @Inject constructor(objects: ObjectFactory, private val project: Project) :
+    BaseLoomExtension {
     override val fabricLoaderVersion: Property<String> = objects.property<String>()
 
     override val loom: LoomGradleExtensionAPI
         get() = project.extensions.getByType<LoomGradleExtensionAPI>()
 
-    override fun current(configure: Action<BaseFabricExtension>) =
+    override fun current(configure: Action<BaseLoomExtension>) =
         configure.execute(this)
 }
 
-open class BaseFabricExtensionDummy : BaseFabricExtension {
+open class BaseLoomExtensionDummy : BaseLoomExtension {
     override val fabricLoaderVersion: Property<String> by NotExistsDelegate()
     override val loom: LoomGradleExtensionAPI by NotExistsDelegate()
 
-    override fun current(configure: Action<BaseFabricExtension>) {}
+    override fun current(configure: Action<BaseLoomExtension>) {}
 }
 
-val Project.fabric: BaseFabricExtension
-    get() = extensions.getByType<BaseFabricExtension>()
-fun Project.fabric(block: BaseFabricExtension.() -> Unit) {
-    if (isFabric) {
-        fabric.block()
+val Project.msLoom: BaseLoomExtension
+    get() = extensions.getByType<BaseLoomExtension>()
+fun Project.msLoom(block: BaseLoomExtension.() -> Unit) {
+    if (isLoom) {
+        msLoom.block()
     }
 }

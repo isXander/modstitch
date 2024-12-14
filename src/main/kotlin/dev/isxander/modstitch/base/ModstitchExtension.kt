@@ -5,8 +5,8 @@ package dev.isxander.modstitch.base
  * such as configuring Minecraft version, mappings, mixins etc.
  */
 
-import dev.isxander.modstitch.base.fabric.BaseFabricExtension
-import dev.isxander.modstitch.base.neoforge.BaseNeoForgeExtension
+import dev.isxander.modstitch.base.loom.BaseLoomExtension
+import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtension
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.platform
 import org.gradle.api.Action
@@ -15,6 +15,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.SourceSet
 import org.gradle.kotlin.dsl.*
 import javax.inject.Inject
 
@@ -28,21 +29,23 @@ interface ModstitchExtension {
     val metadata: MetadataBlock
     fun metadata(action: Action<MetadataBlock>) = action.execute(metadata)
 
-    val implementation: Configuration
-    val compileOnly: Configuration
-    val runtimeOnly: Configuration
-    val localRuntime: Configuration
+    fun createProxyConfigurations(configuration: Configuration)
+    fun createProxyConfigurations(sourceSet: SourceSet)
 
     val platform: Platform
-    val isFabric: Boolean
-    val isNeoForge: Boolean
+    val isLoom: Boolean
+    val isModDevGradle: Boolean
 
-    fun fabric(action: Action<BaseFabricExtension>)
-    fun neoforge(action: Action<BaseNeoForgeExtension>)
+    fun msLoom(action: Action<BaseLoomExtension>)
+    fun msModdevgradle(action: Action<BaseModDevGradleExtension>)
 }
 
 @Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
-open class ModstitchExtensionImpl @Inject constructor(objects: ObjectFactory, private val project: Project, private val remapConfigurations: RemapConfigurations) : ModstitchExtension {
+open class ModstitchExtensionImpl @Inject constructor(
+    objects: ObjectFactory,
+    private val project: Project,
+    private val plugin: BaseCommonImpl<*>,
+) : ModstitchExtension {
     // General setup for the mod environment.
     override val minecraftVersion = objects.property<String>()
     override val javaTarget = objects.property<Int>()
@@ -52,35 +55,24 @@ open class ModstitchExtensionImpl @Inject constructor(objects: ObjectFactory, pr
 
     override val metadata = objects.newInstance<MetadataBlockImpl>(objects)
 
-    // Abstracted configurations for mod-specific dependencies. Loom uses a `mod` prefix for configurations.
-    override val implementation: Configuration
-        get() = resolveConfiguration(remapConfigurations.implementation)
-    override val compileOnly: Configuration
-        get() = resolveConfiguration(remapConfigurations.compileOnly)
-    override val runtimeOnly: Configuration
-        get() = resolveConfiguration(remapConfigurations.runtimeOnly)
-    override val localRuntime: Configuration
-        get() = resolveConfiguration(remapConfigurations.localRuntime)
-
-    private fun resolveConfiguration(resolver: ConfigurationResolver) =
-        resolver(project.configurations).get()
-
+    override fun createProxyConfigurations(configuration: Configuration) = plugin.createProxyConfigurations(project, configuration)
+    override fun createProxyConfigurations(sourceSet: SourceSet) = plugin.createProxyConfigurations(project, sourceSet)
 
     override val platform: Platform
         get() = project.platform
-    override val isFabric: Boolean
-        get() = platform == Platform.Fabric
-    override val isNeoForge: Boolean
-        get() = platform == Platform.NeoForge
+    override val isLoom: Boolean
+        get() = platform == Platform.Loom
+    override val isModDevGradle: Boolean
+        get() = platform == Platform.ModDevGradle
 
-    override fun fabric(action: Action<BaseFabricExtension>) {
-        if (isFabric) {
-            action.execute(project.extensions.getByType<BaseFabricExtension>())
+    override fun msLoom(action: Action<BaseLoomExtension>) {
+        if (isLoom) {
+            action.execute(project.extensions.getByType<BaseLoomExtension>())
         }
     }
-    override fun neoforge(action: Action<BaseNeoForgeExtension>) {
-        if (isNeoForge) {
-            action.execute(project.extensions.getByType<BaseNeoForgeExtension>())
+    override fun msModdevgradle(action: Action<BaseModDevGradleExtension>) {
+        if (isModDevGradle) {
+            action.execute(project.extensions.getByType<BaseModDevGradleExtension>())
         }
     }
 }
@@ -94,6 +86,7 @@ interface ParchmentBlock {
     val parchmentArtifact: Property<String>
     val enabled: Property<Boolean>
 }
+@Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
 open class ParchmentBlockImpl @Inject constructor(objects: ObjectFactory) : ParchmentBlock {
     override val minecraftVersion = objects.property<String>()
     override val mappingsVersion = objects.property<String>()
