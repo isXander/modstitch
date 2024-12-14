@@ -100,6 +100,13 @@ abstract class BaseCommonImpl<T : Any>(
      * e.g. ${mod_id} -> my_mod
      */
     protected open fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
+        val mainSourceSet = target.extensions.getByType<SourceSetContainer>()["main"]
+
+        // Create a new `templates` directory set in the main sourceSet
+        val templates = target.objects.sourceDirectorySet("templates", "Mod metadata resource templates")
+        templates.srcDir("src/main/templates")
+        mainSourceSet.extensions.add("templates", templates)
+
         // An alternative to the traditional `processResources` setup that is compatible with
         // IDE-managed runs (e.g. IntelliJ non-delegated build)
         val generateModMetadata by target.tasks.registering(ProcessResources::class) {
@@ -131,18 +138,14 @@ abstract class BaseCommonImpl<T : Any>(
                 expand(resourcedProperties)
             }
 
-            from("src/main/templates")
+            from(templates)
             into("build/generated/sources/modMetadata")
 
             exclude(Platform.allModManifests - platform.modManifest)
         }
         // Include the output of "generateModMetadata" as an input directory for the build
         // This allows the funny dest dir (`generated/sources/modMetadata`) to be included in the root of the build
-        target.extensions.configure<SourceSetContainer> {
-            named("main") {
-                resources.srcDir(generateModMetadata)
-            }
-        }
+        mainSourceSet.resources.srcDir(generateModMetadata)
 
         return generateModMetadata
     }

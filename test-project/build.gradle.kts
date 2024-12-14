@@ -26,10 +26,17 @@ modstitch {
 
 dependencies {
     modstitch.msLoom {
-        "modstitchModImplementation"("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.3")
+        modstitchModImplementation("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.3")
     }
 
-    "modstitchImplementation"("org.commonmark:commonmark:0.21.0")
+    modstitchImplementation("org.commonmark:commonmark:0.21.0")
+}
+
+sourceSets.main {
+    java.srcDir("../src/main/java")
+    resources.srcDir("../src/main/resources")
+
+    extensions.getByName<SourceDirectorySet>("templates").srcDir("../src/main/templates")
 }
 
 
