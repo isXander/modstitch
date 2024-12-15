@@ -13,7 +13,7 @@ class PublishingModdevgradleImpl(private val type: MDGType) : PublishingCommonIm
         super.apply(target)
 
         val jar = when (type) {
-            MDGType.Regular, MDGType.Vanilla -> target.tasks.named<Jar>("jar")
+            MDGType.Regular -> target.tasks.named<Jar>("jar")
             MDGType.Legacy -> target.tasks.named<RemapJar>("reobfJar")
         }
 

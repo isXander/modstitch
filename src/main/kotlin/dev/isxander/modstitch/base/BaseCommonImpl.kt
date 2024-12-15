@@ -20,7 +20,7 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
 abstract class BaseCommonImpl<T : Any>(
-    protected val platform: Platform,
+    private val platform: Platform,
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
         // Set the property for use elsewhere
@@ -71,6 +71,12 @@ abstract class BaseCommonImpl<T : Any>(
         applyMetadataStringReplacements(target)
 
         createProxyConfigurations(target, target.extensions.getByType<SourceSetContainer>().getByName(SourceSet.MAIN_SOURCE_SET_NAME))
+
+        target.configurations.create("modstitchJiJ") {
+            isTransitive = false
+
+            configureJiJConfiguration(target, this)
+        }
     }
 
     /**
@@ -181,5 +187,7 @@ abstract class BaseCommonImpl<T : Any>(
         }
     }
     abstract fun createProxyConfigurations(target: Project, configuration: Configuration)
+
+    abstract fun configureJiJConfiguration(target: Project, configuration: Configuration)
 
 }

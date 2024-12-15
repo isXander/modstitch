@@ -26,7 +26,7 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         val neoExt = createRealPlatformExtension(target, type)!!
 
         when (type) {
-            MDGType.Regular, MDGType.Vanilla -> target.pluginManager.apply("net.neoforged.moddev")
+            MDGType.Regular -> target.pluginManager.apply("net.neoforged.moddev")
             MDGType.Legacy -> target.pluginManager.apply("net.neoforged.moddev.legacyforge")
         }
 
@@ -45,11 +45,8 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         super.apply(target)
 
         neoExt.configureNeoforge {
-            if (type != MDGType.Vanilla) {
-                version = neoExt.forgeVersion
-            }
+            version = neoExt.forgeVersion
             neoFormVersion = neoExt.neoformVersion
-
 
             parchment {
                 parchmentArtifact = target.modstitch.parchment.parchmentArtifact
@@ -106,6 +103,12 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
             target.configurations.named("additionalRuntimeClasspath") {
                 extendsFrom(this@proxy)
             }
+        }
+    }
+
+    override fun configureJiJConfiguration(target: Project, configuration: Configuration) {
+        target.configurations.named("jarJar") {
+            extendsFrom(configuration)
         }
     }
 

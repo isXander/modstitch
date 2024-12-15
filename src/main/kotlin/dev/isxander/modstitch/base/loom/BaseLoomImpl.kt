@@ -6,6 +6,7 @@ import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.addCamelCasePrefix
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
+import net.fabricmc.loom.util.Constants
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
@@ -80,6 +81,12 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
         }
         target.configurations.create(proxyRegularConfigurationName) proxy@{
             configuration.extendsFrom(this@proxy)
+        }
+    }
+
+    override fun configureJiJConfiguration(target: Project, configuration: Configuration) {
+        target.configurations.named(Constants.Configurations.INCLUDE) {
+            extendsFrom(configuration)
         }
     }
 

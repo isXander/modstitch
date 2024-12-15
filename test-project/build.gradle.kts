@@ -37,7 +37,10 @@ dependencies {
         modstitchModImplementation("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.3")
     }
 
-    modstitchImplementation("org.commonmark:commonmark:0.21.0")
+    "org.commonmark:commonmark:0.21.0".let {
+        modstitchImplementation(it)
+        modstitchJiJ(it)
+    }
 }
 
 sourceSets.main {

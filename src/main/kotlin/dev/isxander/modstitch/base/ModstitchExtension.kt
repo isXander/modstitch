@@ -40,7 +40,6 @@ interface ModstitchExtension {
     val isModDevGradle: Boolean
     val isModDevGradleRegular: Boolean
     val isModDevGradleLegacy: Boolean
-    val isModDevGradleVanilla: Boolean
 
     fun loom(action: Action<BaseLoomExtension>) {}
     fun moddevgradle(action: Action<BaseModDevGradleExtension>) {}
@@ -77,8 +76,6 @@ open class ModstitchExtensionImpl @Inject constructor(
         get() = project.isModDevGradleRegular
     override val isModDevGradleLegacy: Boolean
         get() = project.isModDevGradleLegacy
-    override val isModDevGradleVanilla: Boolean
-        get() = project.isModDevGradleVanilla
 
     override fun loom(action: Action<BaseLoomExtension>) {
         if (project.isLoom) {

@@ -9,7 +9,7 @@ typealias ExtensionPlatforms = Map<Platform, PlatformPlugin<*>>
 open class ModstitchExtensionPlugin(
     private val name: String,
     private val platforms: ExtensionPlatforms,
-    val platform: Platform? = null
+    private val platform: Platform? = null
 ) : Plugin<Project> {
     override fun apply(target: Project) {
         apply(target, platform ?: getDesiredPlatformFromProperty(target))

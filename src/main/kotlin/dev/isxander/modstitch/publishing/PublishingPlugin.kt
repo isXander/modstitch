@@ -13,7 +13,6 @@ class PublishingPlugin : ModstitchExtensionPlugin("publishing", platforms) {
             Platform.Loom to PublishingLoomImpl(),
             Platform.MDG to PublishingModdevgradleImpl(MDGType.Regular),
             Platform.MDGLegacy to PublishingModdevgradleImpl(MDGType.Legacy),
-            Platform.MDGVanilla to PublishingModdevgradleImpl(MDGType.Vanilla),
         )
     }
 }

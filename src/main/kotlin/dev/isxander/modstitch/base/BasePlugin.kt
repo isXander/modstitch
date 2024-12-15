@@ -13,7 +13,6 @@ class BasePlugin : ModstitchExtensionPlugin("base", platforms) {
             Platform.Loom to BaseLoomImpl(),
             Platform.MDG to BaseModdevgradleImpl(MDGType.Regular),
             Platform.MDGLegacy to BaseModdevgradleImpl(MDGType.Legacy),
-            Platform.MDGVanilla to BaseModdevgradleImpl(MDGType.Vanilla),
         )
     }
 }
