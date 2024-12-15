@@ -81,6 +81,22 @@ abstract class BaseCommonImpl<T : Any>(
     protected open fun applyDefaultRepositories(repositories: RepositoryHandler) {
         repositories.mavenCentral()
         repositories.maven("https://maven.parchmentmc.org") { name = "ParchmentMC" }
+        repositories.exclusiveContent {
+            forRepository {
+                repositories.maven("https://api.modrinth.com/maven") { name = "Modrinth" }
+            }
+            filter {
+                includeGroup("maven.modrinth")
+            }
+        }
+        repositories.exclusiveContent {
+            forRepository {
+                repositories.maven("https://cursemaven.com") { name = "Cursemaven" }
+            }
+            filter {
+                includeGroup("curse.maven")
+            }
+        }
     }
 
     protected open fun applyJavaSettings(target: Project) {
