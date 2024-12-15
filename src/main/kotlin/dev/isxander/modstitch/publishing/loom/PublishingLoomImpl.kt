@@ -7,7 +7,7 @@ import org.gradle.api.Project
 import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.named
 
-object PublishingLoomImpl : PublishingCommonImpl<Nothing>() {
+class PublishingLoomImpl : PublishingCommonImpl<Nothing>() {
     override fun apply(target: Project) {
         super.apply(target)
 

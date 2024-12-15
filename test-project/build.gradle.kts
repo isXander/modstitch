@@ -3,8 +3,13 @@ plugins {
     id("dev.isxander.modstitch.publishing")
 }
 
+fun prop(name: String, consumer: (prop: String) -> Unit) {
+    (findProperty(name) as? String?)
+        ?.let(consumer)
+}
+
 modstitch {
-    minecraftVersion = "1.21.4"
+    minecraftVersion = findProperty("minecraftVersion") as String
 
     metadata {
         modId = "test_project"
@@ -15,17 +20,20 @@ modstitch {
         modDescription = "A test project for ModStitch"
     }
 
-    msLoom {
+    loom {
         fabricLoaderVersion = "0.16.9"
     }
 
-    msModdevgradle {
-        neoForgeVersion = "21.4.10-beta"
+    moddevgradle {
+        prop("forgeVersion") { forgeVersion = it }
+        prop("neoformVersion") { neoformVersion = it }
+
+        defaultRuns()
     }
 }
 
 dependencies {
-    modstitch.msLoom {
+    modstitch.loom {
         modstitchModImplementation("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.3")
     }
 
@@ -36,7 +44,7 @@ sourceSets.main {
     java.srcDir("../src/main/java")
     resources.srcDir("../src/main/resources")
 
-    extensions.getByName<SourceDirectorySet>("templates").srcDir("../src/main/templates")
+    modstitch.templatesSourceDirectorySet.srcDir("../src/main/templates")
 }
 
 val clientSourceSet = sourceSets.create("client") {

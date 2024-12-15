@@ -7,8 +7,7 @@ package dev.isxander.modstitch.base
 
 import dev.isxander.modstitch.base.loom.BaseLoomExtension
 import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtension
-import dev.isxander.modstitch.util.Platform
-import dev.isxander.modstitch.util.platform
+import dev.isxander.modstitch.util.*
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -39,9 +38,12 @@ interface ModstitchExtension {
     val platform: Platform
     val isLoom: Boolean
     val isModDevGradle: Boolean
+    val isModDevGradleRegular: Boolean
+    val isModDevGradleLegacy: Boolean
+    val isModDevGradleVanilla: Boolean
 
-    fun msLoom(action: Action<BaseLoomExtension>)
-    fun msModdevgradle(action: Action<BaseModDevGradleExtension>)
+    fun loom(action: Action<BaseLoomExtension>) {}
+    fun moddevgradle(action: Action<BaseModDevGradleExtension>) {}
 
     val generateModMetadataTask: TaskProvider<ProcessResources>
     val templatesSourceDirectorySet: SourceDirectorySet
@@ -68,17 +70,23 @@ open class ModstitchExtensionImpl @Inject constructor(
     override val platform: Platform
         get() = project.platform
     override val isLoom: Boolean
-        get() = platform == Platform.Loom
+        get() = project.isLoom
     override val isModDevGradle: Boolean
-        get() = platform == Platform.ModDevGradle
+        get() = project.isModDevGradle
+    override val isModDevGradleRegular: Boolean
+        get() = project.isModDevGradleRegular
+    override val isModDevGradleLegacy: Boolean
+        get() = project.isModDevGradleLegacy
+    override val isModDevGradleVanilla: Boolean
+        get() = project.isModDevGradleVanilla
 
-    override fun msLoom(action: Action<BaseLoomExtension>) {
-        if (isLoom) {
+    override fun loom(action: Action<BaseLoomExtension>) {
+        if (project.isLoom) {
             action.execute(project.extensions.getByType<BaseLoomExtension>())
         }
     }
-    override fun msModdevgradle(action: Action<BaseModDevGradleExtension>) {
-        if (isModDevGradle) {
+    override fun moddevgradle(action: Action<BaseModDevGradleExtension>) {
+        if (project.isModDevGradle) {
             action.execute(project.extensions.getByType<BaseModDevGradleExtension>())
         }
     }

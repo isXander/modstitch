@@ -18,7 +18,7 @@ open class ModstitchExtensionPlugin(
     private fun getDesiredPlatformFromProperty(target: Project): Platform {
         val desiredPlatformStr = target.findProperty("modstitch.platform")?.toString()
             ?: error("Project `${target.name}` is missing 'modstitch.platform' property. Cannot apply ")
-        return Platform.fromSerialName(desiredPlatformStr)
+        return Platform.fromFriendlyName(desiredPlatformStr)
             ?: error("Unknown platform on project `${target.name}`: '$desiredPlatformStr'. Options are: ${Platform.values().joinToString(", ") { it.friendlyName }}")
     }
 
@@ -38,12 +38,19 @@ open class ModstitchExtensionPlugin(
         // create dud extensions for all other platforms
         unselectedPlatforms.forEach { unselectedPlatform ->
             unselectedPlatform.platformExtensionInfo?.let {
-                createDudExtension(target, it)
+                createDummyExtension(target, it)
             }
         }
     }
 
-    private fun <T : Any> createDudExtension(target: Project, extension: PlatformExtensionInfo<T>): T {
-        return target.extensions.create(extension.api.java, extension.name, extension.dummyImpl.java)
+    private fun <T : Any> createDummyExtension(target: Project, extension: PlatformExtensionInfo<T>) {
+        // multiple platforms may use the same extension, so only create a dummy if it doesn't already exist
+        // the real platform is always applied first
+        val alreadyExists = target.extensions.extensionsSchema
+            .find { it.name == extension.name } != null
+
+        if (!alreadyExists) {
+            target.extensions.create(extension.api.java, extension.name, extension.dummyImpl.java)
+        }
     }
 }

@@ -5,6 +5,7 @@ package dev.isxander.modstitch.base.loom
  */
 
 import dev.isxander.modstitch.PlatformExtension
+import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
 import dev.isxander.modstitch.util.isLoom
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
@@ -18,32 +19,25 @@ import javax.inject.Inject
 interface BaseLoomExtension : PlatformExtension<BaseLoomExtension> {
     val fabricLoaderVersion: Property<String>
 
-    val loom: LoomGradleExtensionAPI
-    fun loom(action: Action<LoomGradleExtensionAPI>) = action.execute(loom)
+    val loomExtension: LoomGradleExtensionAPI
+    fun configureLoom(action: Action<LoomGradleExtensionAPI>) = action.execute(loomExtension)
 }
 
 open class BaseLoomExtensionImpl @Inject constructor(objects: ObjectFactory, private val project: Project) :
     BaseLoomExtension {
     override val fabricLoaderVersion: Property<String> = objects.property<String>()
 
-    override val loom: LoomGradleExtensionAPI
-        get() = project.extensions.getByType<LoomGradleExtensionAPI>()
+    override val loomExtension: LoomGradleExtensionAPI by ExtensionGetter(project)
+    override fun configureLoom(action: Action<LoomGradleExtensionAPI>) =
+        if (project.isLoom) action.execute(loomExtension) else {}
 
-    override fun current(configure: Action<BaseLoomExtension>) =
+    override fun applyIfCurrent(configure: Action<BaseLoomExtension>) =
         configure.execute(this)
 }
 
 open class BaseLoomExtensionDummy : BaseLoomExtension {
     override val fabricLoaderVersion: Property<String> by NotExistsDelegate()
-    override val loom: LoomGradleExtensionAPI by NotExistsDelegate()
+    override val loomExtension: LoomGradleExtensionAPI by NotExistsDelegate()
 
-    override fun current(configure: Action<BaseLoomExtension>) {}
-}
-
-val Project.msLoom: BaseLoomExtension
-    get() = extensions.getByType<BaseLoomExtension>()
-fun Project.msLoom(block: BaseLoomExtension.() -> Unit) {
-    if (isLoom) {
-        msLoom.block()
-    }
+    override fun applyIfCurrent(configure: Action<BaseLoomExtension>) {}
 }

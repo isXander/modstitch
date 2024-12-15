@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.isxander.modstitch"
-version = "0.1.1"
+version = "0.2.0"
 
 repositories {
     mavenCentral()
@@ -24,7 +24,7 @@ gradlePlugin {
     vcsUrl = "https://github.com/isXander/modstitch.git"
     val pluginTags = listOf("modstitch", "minecraft", "mod")
 
-    fun registerExtension(extensionId: String, platforms: List<String> = listOf("fabric", "neoforge"), description: String) {
+    fun registerExtension(extensionId: String, description: String) {
         val extensionCapitalised = extensionId.capitalize()
 
         plugins.create(extensionId) {
@@ -35,33 +35,19 @@ gradlePlugin {
             this.description = description
             tags = pluginTags
         }
-
-        for (platform in platforms) {
-            plugins.create("$extensionId.$platform") {
-                id = "dev.isxander.modstitch.$extensionId.$platform"
-                implementationClass = "dev.isxander.modstitch.$extensionId.$platform.${extensionCapitalised}${platform.capitalize()}Plugin"
-
-                displayName = "ModStitch $extensionCapitalised for $platform platform"
-                this.description = "The '$platform' platform implementation of ModStitch $extensionCapitalised"
-                tags = pluginTags
-            }
-        }
     }
 
-    // Creates:
-    // - dev.isxander.modstitch.base (dev.isxander.modstitch.base.BasePlugin)
-    // - dev.isxander.modstitch.base.loom (dev.isxander.modstitch.base.fabric.BaseLoomPlugin)
-    // - dev.isxander.modstitch.base.moddevgradle (dev.isxander.modstitch.base.moddevgradle.BaseModdevgradlePlugin)
-    registerExtension("base", platforms = listOf("loom", "moddevgradle"), description = "The base plugin for ModStitch")
-    registerExtension("publishing", platforms = listOf("loom", "moddevgradle"), description = "Adds mod publishing functionality to ModStitch")
+    registerExtension("base", description = "The base plugin for ModStitch")
+    registerExtension("publishing", description = "Adds mod publishing functionality to ModStitch")
 }
 
 dependencies {
-    fun plugin(id: String, version: String) = "$id:$id.gradle.plugin:$version"
+    fun plugin(id: String, version: String? = null, prop: String? = null) = "$id:$id.gradle.plugin:${version ?: property(prop!!) as String}"
 
-    implementation(plugin("fabric-loom", "1.9.+"))
-    implementation(plugin("net.neoforged.moddev", "1.0.23"))
-    implementation(plugin("me.modmuss50.mod-publish-plugin", "0.8.1"))
+    implementation(plugin("fabric-loom", prop = "deps.loom"))
+    implementation(plugin("net.neoforged.moddev", prop = "deps.moddevgradle"))
+    implementation(plugin("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle"))
+    implementation(plugin("me.modmuss50.mod-publish-plugin", prop = "deps.mpp"))
 }
 
 idea {

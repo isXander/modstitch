@@ -31,7 +31,6 @@ abstract class BaseCommonImpl<T : Any>(
         target.pluginManager.apply("idea")
 
         // Create our plugin extension
-        val proxyConfigCreator: (Configuration) -> Unit = { createProxyConfigurations(target, it) }
         val msExt = target.extensions.create(
             ModstitchExtension::class.java,
             "modstitch",

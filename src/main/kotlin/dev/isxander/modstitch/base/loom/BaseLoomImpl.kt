@@ -14,7 +14,7 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 
-object BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
+class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
     override val platformExtensionInfo = PlatformExtensionInfo(
         "msLoom",
         BaseLoomExtension::class,
@@ -30,7 +30,7 @@ object BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
 
         target.dependencies {
             "minecraft"(target.modstitch.minecraftVersion.map { "com.mojang:minecraft:$it" })
-            "mappings"(fabricExt.loom.officialMojangMappings())
+            "mappings"(fabricExt.loomExtension.officialMojangMappings())
 
             "modImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader:$it" })
         }

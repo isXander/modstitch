@@ -2,9 +2,9 @@ package dev.isxander.modstitch.base.moddevgradle
 
 import dev.isxander.modstitch.base.BaseCommonImpl
 import dev.isxander.modstitch.base.modstitch
-import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.addCamelCasePrefix
+import net.neoforged.moddevgradle.legacyforge.dsl.Obfuscation
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.TaskProvider
@@ -12,18 +12,23 @@ import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.slf4j.event.Level
 
-object BaseModdevgradleImpl : BaseCommonImpl<BaseModDevGradleExtension>(Platform.ModDevGradle) {
+class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDevGradleExtension>(type.platform) {
+    private lateinit var remapConfiguration: Configuration
+
     override val platformExtensionInfo = PlatformExtensionInfo(
         "msModdevgradle",
         BaseModDevGradleExtension::class,
         BaseModDevGradleExtensionImpl::class,
-        BaseModDevGradleExtensionDummy::class
+        BaseModDevGradleExtensionDummy::class,
     )
 
     override fun apply(target: Project) {
-        val neoExt = createRealPlatformExtension(target, target)!!
+        val neoExt = createRealPlatformExtension(target, type)!!
 
-        target.pluginManager.apply("net.neoforged.moddev")
+        when (type) {
+            MDGType.Regular, MDGType.Vanilla -> target.pluginManager.apply("net.neoforged.moddev")
+            MDGType.Legacy -> target.pluginManager.apply("net.neoforged.moddev.legacyforge")
+        }
 
         target.configurations.create("localRuntime") localRuntime@{
             target.configurations.named("runtimeOnly") {
@@ -31,10 +36,20 @@ object BaseModdevgradleImpl : BaseCommonImpl<BaseModDevGradleExtension>(Platform
             }
         }
 
+        if (type == MDGType.Legacy) {
+            // proxy configurations will add remap configurations to this
+            remapConfiguration = target.configurations.create("modstitchMdgRemap")
+            target.obfuscation.createRemappingConfiguration(remapConfiguration)
+        }
+
         super.apply(target)
 
-        neoExt.modDevGradle {
-            version = neoExt.neoForgeVersion
+        neoExt.configureNeoforge {
+            if (type != MDGType.Vanilla) {
+                version = neoExt.forgeVersion
+            }
+            neoFormVersion = neoExt.neoformVersion
+
 
             parchment {
                 parchmentArtifact = target.modstitch.parchment.parchmentArtifact
@@ -50,6 +65,12 @@ object BaseModdevgradleImpl : BaseCommonImpl<BaseModDevGradleExtension>(Platform
                 }
             }
         }
+
+        target.dependencies {
+            if (type == MDGType.Legacy) {
+                "annotationProcessor"("org.spongepowered:mixin:0.8.5:processor")
+            }
+        }
     }
 
     override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
@@ -57,7 +78,7 @@ object BaseModdevgradleImpl : BaseCommonImpl<BaseModDevGradleExtension>(Platform
 
         // Generate mod metadata every project reload, instead of manually
         // (see `generateModMetadata` task in `common.gradle.kts`)
-        target.msModdevgradle.modDevGradle {
+        target.msModdevgradle.configureNeoforge {
             ideSyncTask(generateModMetadata)
         }
 
@@ -75,6 +96,9 @@ object BaseModdevgradleImpl : BaseCommonImpl<BaseModDevGradleExtension>(Platform
 
         target.configurations.create(proxyModConfigurationName) proxy@{
             configuration.extendsFrom(this@proxy)
+
+            if (type == MDGType.Legacy)
+                remapConfiguration.extendsFrom(this@proxy)
         }
 
         target.configurations.create(proxyRegularConfigurationName) proxy@{
@@ -84,4 +108,7 @@ object BaseModdevgradleImpl : BaseCommonImpl<BaseModDevGradleExtension>(Platform
             }
         }
     }
+
+    private val Project.obfuscation: Obfuscation
+        get() = if (type == MDGType.Legacy) extensions.getByType<Obfuscation>() else error("Obfuscation is not available in this context")
 }
