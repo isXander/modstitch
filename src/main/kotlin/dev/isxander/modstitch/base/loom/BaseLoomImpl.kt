@@ -9,6 +9,7 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
@@ -54,6 +55,14 @@ object BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
         }
 
         return generateModMetadata
+    }
+
+    override fun createProxyConfigurations(target: Project, sourceSet: SourceSet) {
+        if (sourceSet.name != SourceSet.MAIN_SOURCE_SET_NAME) {
+            target.loom.createRemapConfigurations(sourceSet)
+        }
+
+        super.createProxyConfigurations(target, sourceSet)
     }
 
     override fun createProxyConfigurations(target: Project, configuration: Configuration) {

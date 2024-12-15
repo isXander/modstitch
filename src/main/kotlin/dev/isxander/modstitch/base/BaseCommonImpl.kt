@@ -166,7 +166,7 @@ abstract class BaseCommonImpl<T : Any>(
         return generateModMetadata
     }
 
-    fun createProxyConfigurations(target: Project, sourceSet: SourceSet) {
+    open fun createProxyConfigurations(target: Project, sourceSet: SourceSet) {
         fun mainOnly(configurationName: String): String? =
             configurationName.takeIf { sourceSet.name == SourceSet.MAIN_SOURCE_SET_NAME }
 
