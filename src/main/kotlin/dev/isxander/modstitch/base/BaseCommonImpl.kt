@@ -1,6 +1,8 @@
 package dev.isxander.modstitch.base
 
 import dev.isxander.modstitch.*
+import dev.isxander.modstitch.base.extensions.*
+import dev.isxander.modstitch.util.MODSTITCH_VERSION
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.platform
 import net.fabricmc.loom.util.Constants
@@ -23,6 +25,8 @@ abstract class BaseCommonImpl<T : Any>(
     private val platform: Platform,
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
+        target.logger.lifecycle("Modstitch/Base: $MODSTITCH_VERSION")
+
         // Set the property for use elsewhere
         target.platform = platform
 
@@ -132,6 +136,7 @@ abstract class BaseCommonImpl<T : Any>(
         // IDE-managed runs (e.g. IntelliJ non-delegated build)
         val generateModMetadata by target.tasks.registering(ProcessResources::class) {
             val manifest = target.modstitch.metadata
+            val mixin = target.modstitch.mixin
 
             val baseProperties = mapOf<String, Provider<String>>(
                 "minecraft_version" to target.modstitch.minecraftVersion,
@@ -143,6 +148,7 @@ abstract class BaseCommonImpl<T : Any>(
                 "mod_group" to manifest.modGroup,
                 "mod_author" to manifest.modAuthor,
                 "mod_credits" to manifest.modCredits,
+                "mod_mixins" to mixin.serializer.map { it.apply(mixin.configs.stream().toList()) }
             )
 
             // Combine the lazy-valued base properties with the replacement properties, lazily
@@ -162,7 +168,14 @@ abstract class BaseCommonImpl<T : Any>(
             from(templates)
             into("build/generated/sources/modMetadata")
 
-            exclude(Platform.allModManifests - platform.modManifest)
+            exclude { fileTreeElement ->
+                // At execution time, modLoaderManifest should be resolvable
+                val currentManifest = target.modstitch.modLoaderManifest.orNull
+                // Now build the set of manifests to exclude dynamically
+                val manifestsToExclude = Platform.allModManifests - currentManifest
+                // Return true if the file should be excluded, false otherwise
+                fileTreeElement.name in manifestsToExclude
+            }
         }
         // Include the output of "generateModMetadata" as an input directory for the build
         // This allows the funny dest dir (`generated/sources/modMetadata`) to be included in the root of the build

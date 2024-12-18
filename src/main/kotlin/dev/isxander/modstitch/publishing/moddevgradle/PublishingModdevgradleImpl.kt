@@ -19,7 +19,11 @@ class PublishingModdevgradleImpl(private val type: MDGType) : PublishingCommonIm
 
         target.msPublishing.mpp {
             file.assign(jar.flatMap { it.archiveFile })
-            modLoaders.add("neoforge")
+
+            modLoaders.add(when (this@PublishingModdevgradleImpl.type) {
+                MDGType.Regular -> "neoforge"
+                MDGType.Legacy -> "forge"
+            })
         }
     }
 }

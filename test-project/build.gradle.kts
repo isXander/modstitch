@@ -30,6 +30,12 @@ modstitch {
 
         defaultRuns()
     }
+
+    mixin {
+        configs.create("test") {
+            side = BOTH
+        }
+    }
 }
 
 dependencies {

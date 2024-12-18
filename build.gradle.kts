@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.isxander.modstitch"
-version = "0.2.1"
+version = "0.3.0"
 
 repositories {
     mavenCentral()
@@ -44,10 +44,19 @@ gradlePlugin {
 dependencies {
     fun plugin(id: String, version: String? = null, prop: String? = null) = "$id:$id.gradle.plugin:${version ?: property(prop!!) as String}"
 
+    // Gradle Plugins
     implementation(plugin("fabric-loom", prop = "deps.loom"))
     implementation(plugin("net.neoforged.moddev", prop = "deps.moddevgradle"))
     implementation(plugin("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle"))
     implementation(plugin("me.modmuss50.mod-publish-plugin", prop = "deps.mpp"))
+
+    // Libraries used within the plugin
+    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.electronwill.night-config:toml:3.8.1")
+}
+
+tasks.jar {
+    manifest.attributes["Implementation-Version"] = project.version
 }
 
 idea {

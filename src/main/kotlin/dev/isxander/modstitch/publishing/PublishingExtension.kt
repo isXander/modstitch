@@ -1,6 +1,6 @@
 package dev.isxander.modstitch.publishing
 
-import dev.isxander.modstitch.base.*
+import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.ExtensionGetter
 import me.modmuss50.mpp.ModPublishExtension
 import org.gradle.api.Action

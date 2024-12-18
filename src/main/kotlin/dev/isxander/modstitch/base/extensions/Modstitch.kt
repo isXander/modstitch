@@ -1,10 +1,6 @@
-package dev.isxander.modstitch.base
+package dev.isxander.modstitch.base.extensions
 
-/**
- * The "common" extension for all loaders, as much configuration is done in this extension
- * such as configuring Minecraft version, mappings, mixins etc.
- */
-
+import dev.isxander.modstitch.base.*
 import dev.isxander.modstitch.base.loom.BaseLoomExtension
 import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtension
 import dev.isxander.modstitch.util.*
@@ -13,7 +9,6 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
@@ -31,6 +26,11 @@ interface ModstitchExtension {
 
     val metadata: MetadataBlock
     fun metadata(action: Action<MetadataBlock>) = action.execute(metadata)
+
+    val mixin: MixinBlock
+    fun mixin(action: Action<MixinBlock>) = action.execute(mixin)
+
+    val modLoaderManifest: Property<String>
 
     fun createProxyConfigurations(configuration: Configuration)
     fun createProxyConfigurations(sourceSet: SourceSet)
@@ -63,6 +63,10 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val metadata = objects.newInstance<MetadataBlockImpl>(objects)
 
+    override val mixin = objects.newInstance<MixinBlockImpl>(objects)
+
+    override val modLoaderManifest = objects.property<String>()
+
     override fun createProxyConfigurations(configuration: Configuration) = plugin.createProxyConfigurations(project, configuration)
     override fun createProxyConfigurations(sourceSet: SourceSet) = plugin.createProxyConfigurations(project, sourceSet)
 
@@ -94,48 +98,6 @@ open class ModstitchExtensionImpl @Inject constructor(
         get() = project.extensions.getByType<SourceSetContainer>()["main"].extensions.getByName<SourceDirectorySet>("templates")
 }
 
-// ------------------------------------
-// Inner classes for block organisation
-// ------------------------------------
-interface ParchmentBlock {
-    val minecraftVersion: Property<String>
-    val mappingsVersion: Property<String>
-    val parchmentArtifact: Property<String>
-    val enabled: Property<Boolean>
-}
-@Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
-open class ParchmentBlockImpl @Inject constructor(objects: ObjectFactory) : ParchmentBlock {
-    override val minecraftVersion = objects.property<String>()
-    override val mappingsVersion = objects.property<String>()
-    override val parchmentArtifact = objects.property<String>().convention(minecraftVersion.zip(mappingsVersion) { mc, mappings -> "org.parchmentmc.data:parchment-$mc:$mappings@zip" })
-    override val enabled = objects.property<Boolean>().convention(parchmentArtifact.map { it.isNotEmpty() }.orElse(false))
-}
-
-interface MetadataBlock {
-    val modId: Property<String>
-    val modName: Property<String>
-    val modVersion: Property<String>
-    val modDescription: Property<String>
-    val modLicense: Property<String>
-    val modGroup: Property<String>
-    val modAuthor: Property<String>
-    val modCredits: Property<String>
-    val replacementProperties: MapProperty<String, String>
-}
-open class MetadataBlockImpl @Inject constructor(objects: ObjectFactory) : MetadataBlock {
-    /** Mods should use a `lower_snake_case` mod-id to obey the conventions of both mod loaders. */
-    override val modId = objects.property<String>().convention("unnamed_mod")
-    override val modName = objects.property<String>().convention("Unnamed Mod")
-    override val modVersion = objects.property<String>().convention("1.0.0")
-    override val modDescription = objects.property<String>().convention("")
-    override val modLicense = objects.property<String>().convention("All Rights Reserved")
-    override val modGroup = objects.property<String>().convention("com.example")
-    override val modAuthor = objects.property<String>().convention("")
-    override val modCredits = objects.property<String>().convention("")
-    override val replacementProperties = objects.mapProperty<String, String>().convention(emptyMap())
-}
-
 operator fun ModstitchExtension.invoke(block: ModstitchExtension.() -> Unit) = block()
 val Project.modstitch: ModstitchExtension
     get() = extensions.getByType<ModstitchExtension>()
-

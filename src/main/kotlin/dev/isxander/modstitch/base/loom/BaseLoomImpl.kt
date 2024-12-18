@@ -1,9 +1,12 @@
 package dev.isxander.modstitch.base.loom
 
+import com.google.gson.Gson
 import dev.isxander.modstitch.base.BaseCommonImpl
-import dev.isxander.modstitch.base.modstitch
+import dev.isxander.modstitch.base.extensions.MixinSettingsSerializer
+import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
+import dev.isxander.modstitch.util.Side
 import dev.isxander.modstitch.util.addCamelCasePrefix
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.util.Constants
@@ -14,6 +17,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
+import java.util.function.Function
 
 class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
     override val platformExtensionInfo = PlatformExtensionInfo(
@@ -41,6 +45,9 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
                 error("Parchment is not supported on Loom yet.")
             }
         }
+
+        target.modstitch.modLoaderManifest = Platform.Loom.modManifest
+        target.modstitch.mixin.serializer.convention(getMixinSerializer())
     }
 
     override fun applyDefaultRepositories(repositories: RepositoryHandler) {
@@ -88,6 +95,16 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
         target.configurations.named(Constants.Configurations.INCLUDE) {
             extendsFrom(configuration)
         }
+    }
+
+    private fun getMixinSerializer(): MixinSettingsSerializer = Function { configs ->
+        configs.map {
+            FMJMixinConfig(it.config.get(), when (it.side.get()) {
+                Side.Both -> "*"
+                Side.Client -> "client"
+                Side.Server -> "server"
+            })
+        }.let { Gson().toJson(it) }
     }
 
     private val Project.loom: LoomGradleExtensionAPI

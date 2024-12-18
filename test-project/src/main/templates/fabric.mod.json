@@ -7,5 +7,6 @@
   "environment": "*",
   "entrypoints": {
 
-  }
+  },
+  "mixins": ${mod_mixins}
 }
