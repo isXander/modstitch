@@ -50,7 +50,7 @@ open class ModstitchExtensionPlugin(
             .find { it.name == extension.name } != null
 
         if (!alreadyExists) {
-            target.extensions.create(extension.api.java, extension.name, extension.dummyImpl.java)
+            target.extensions.create(extension.api, extension.name, extension.dummyImpl)
         }
     }
 }

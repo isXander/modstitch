@@ -9,7 +9,7 @@ abstract class PlatformPlugin<T : Any> : Plugin<Project> {
 
     protected fun createRealPlatformExtension(target: Project, vararg constructionArguments: Any): T? {
         return platformExtensionInfo?.let {
-            target.extensions.create(it.api.java, it.name, it.realImpl.java, *constructionArguments)
+            target.extensions.create(it.api, it.name, it.realImpl, *constructionArguments)
         }
     }
 }

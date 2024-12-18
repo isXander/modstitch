@@ -22,7 +22,7 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
 abstract class BaseCommonImpl<T : Any>(
-    private val platform: Platform,
+    val platform: Platform,
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
         target.logger.lifecycle("Modstitch/Base: $MODSTITCH_VERSION")
@@ -132,14 +132,16 @@ abstract class BaseCommonImpl<T : Any>(
         templates.srcDir("src/main/templates")
         mainSourceSet.extensions.add("templates", templates)
 
+        val modstitch = target.modstitch
+
         // An alternative to the traditional `processResources` setup that is compatible with
         // IDE-managed runs (e.g. IntelliJ non-delegated build)
         val generateModMetadata by target.tasks.registering(ProcessResources::class) {
-            val manifest = target.modstitch.metadata
-            val mixin = target.modstitch.mixin
+            val manifest = modstitch.metadata
+            val mixin = modstitch.mixin
 
             val baseProperties = mapOf<String, Provider<String>>(
-                "minecraft_version" to target.modstitch.minecraftVersion,
+                "minecraft_version" to modstitch.minecraftVersion,
                 "mod_version" to manifest.modVersion,
                 "mod_name" to manifest.modName,
                 "mod_id" to manifest.modId,
@@ -170,7 +172,7 @@ abstract class BaseCommonImpl<T : Any>(
 
             exclude { fileTreeElement ->
                 // At execution time, modLoaderManifest should be resolvable
-                val currentManifest = target.modstitch.modLoaderManifest.orNull
+                val currentManifest = modstitch.modLoaderManifest.orNull
                 // Now build the set of manifests to exclude dynamically
                 val manifestsToExclude = Platform.allModManifests - currentManifest
                 // Return true if the file should be excluded, false otherwise
