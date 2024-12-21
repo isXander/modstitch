@@ -7,6 +7,15 @@ enum class Platform(val friendlyName: String, val modManifest: String?) {
     MDG("moddevgradle", "META-INF/neoforge.mods.toml"),
     MDGLegacy("moddevgradle-legacy", "META-INF/mods.toml");
 
+    val isModDevGradle: Boolean
+        get() = this in listOf(MDG, MDGLegacy)
+    val isModDevGradleRegular: Boolean
+        get() = this == MDG
+    val isModDevGradleLegacy: Boolean
+        get() = this == MDGLegacy
+    val isLoom: Boolean
+        get() = this == Loom
+
     companion object {
         val allModManifests = values().mapNotNull { it.modManifest }
 
@@ -24,12 +33,3 @@ var Project.platform: Platform
     internal set(value) {
         project.extensions.extraProperties["appliedPlatform"] = value.friendlyName
     }
-
-val Project.isLoom: Boolean
-    get() = platform == Platform.Loom
-val Project.isModDevGradle: Boolean
-    get() = platform in listOf(Platform.MDG, Platform.MDGLegacy)
-val Project.isModDevGradleRegular: Boolean
-    get() = platform == Platform.MDG
-val Project.isModDevGradleLegacy: Boolean
-    get() = platform == Platform.MDGLegacy

@@ -44,14 +44,13 @@ interface ModstitchExtension {
     fun loom(action: Action<BaseLoomExtension>) {}
     fun moddevgradle(action: Action<BaseModDevGradleExtension>) {}
 
-    val generateModMetadataTask: TaskProvider<ProcessResources>
     val templatesSourceDirectorySet: SourceDirectorySet
 }
 
 @Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
 open class ModstitchExtensionImpl @Inject constructor(
     objects: ObjectFactory,
-    private val project: Project,
+    @Transient private val project: Project,
     private val plugin: BaseCommonImpl<*>,
 ) : ModstitchExtension {
     // General setup for the mod environment.
@@ -71,29 +70,26 @@ open class ModstitchExtensionImpl @Inject constructor(
     override fun createProxyConfigurations(sourceSet: SourceSet) = plugin.createProxyConfigurations(project, sourceSet)
 
     override val platform: Platform
-        get() = project.platform
+        get() = plugin.platform
     override val isLoom: Boolean
-        get() = project.isLoom
+        get() = platform.isLoom
     override val isModDevGradle: Boolean
-        get() = project.isModDevGradle
+        get() = platform.isModDevGradle
     override val isModDevGradleRegular: Boolean
-        get() = project.isModDevGradleRegular
+        get() = platform.isModDevGradleRegular
     override val isModDevGradleLegacy: Boolean
-        get() = project.isModDevGradleLegacy
+        get() = platform.isModDevGradleLegacy
 
-    override fun loom(action: Action<BaseLoomExtension>) {
-        if (project.isLoom) {
-            action.execute(project.extensions.getByType<BaseLoomExtension>())
+    override fun loom(action: Action<BaseLoomExtension>) = platformExtension(action)
+    override fun moddevgradle(action: Action<BaseModDevGradleExtension>) = platformExtension(action)
+
+    private inline fun <reified T> platformExtension(action: Action<T>) {
+        val platformExtension = plugin.platformExtension
+        if (platformExtension is T) {
+            action.execute(platformExtension)
         }
     }
-    override fun moddevgradle(action: Action<BaseModDevGradleExtension>) {
-        if (project.isModDevGradle) {
-            action.execute(project.extensions.getByType<BaseModDevGradleExtension>())
-        }
-    }
 
-    override val generateModMetadataTask: TaskProvider<ProcessResources>
-        get() = project.tasks.getByName<TaskProvider<ProcessResources>>("generateModMetadata")
     override val templatesSourceDirectorySet: SourceDirectorySet
         get() = project.extensions.getByType<SourceSetContainer>()["main"].extensions.getByName<SourceDirectorySet>("templates")
 }

@@ -81,7 +81,7 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
             MDGType.Regular -> Platform.MDG.modManifest
             MDGType.Legacy -> Platform.MDGLegacy.modManifest
         }
-        target.modstitch.mixin.serializer.convention(getMixinSerializer(target))
+        target.modstitch.mixin.serializer.convention(getMixinSerializer())
     }
 
     override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
@@ -148,11 +148,11 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         }
     }
 
-    private fun getMixinSerializer(target: Project): MixinSettingsSerializer = Function { configs ->
+    private fun getMixinSerializer(): MixinSettingsSerializer = { configs, logger ->
         val toml = Config.inMemory()
         toml.add("mixins", configs.map {
             if (it.side.getOrElse(Side.Both) != Side.Both) {
-                target.logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${it.name}")
+                logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${it.name}")
             }
 
             Config.inMemory().apply { set("config", it.config.get()) }

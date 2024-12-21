@@ -17,7 +17,6 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
-import java.util.function.Function
 
 class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
     override val platformExtensionInfo = PlatformExtensionInfo(
@@ -97,7 +96,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
         }
     }
 
-    private fun getMixinSerializer(): MixinSettingsSerializer = Function { configs ->
+    private fun getMixinSerializer(): MixinSettingsSerializer = { configs, _ ->
         configs.map {
             FMJMixinConfig(it.config.get(), when (it.side.get()) {
                 Side.Both -> "*"

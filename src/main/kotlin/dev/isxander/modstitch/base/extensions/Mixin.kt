@@ -4,10 +4,10 @@ import dev.isxander.modstitch.util.Side
 import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.logging.Logger
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.kotlin.dsl.*
-import java.util.function.Function
 import javax.inject.Inject
 
 interface MixinBlock {
@@ -21,7 +21,7 @@ open class MixinBlockImpl @Inject constructor(objects: ObjectFactory) : MixinBlo
     override val configs = objects.domainObjectContainer(MixinConfigurationSettings::class)
 }
 
-typealias MixinSettingsSerializer = Function<List<MixinConfigurationSettings>, String>
+typealias MixinSettingsSerializer = (configs: List<MixinConfigurationSettings>, logger: Logger) -> String
 
 open class MixinConfigurationSettings @Inject constructor(private val namekt: String, objects: ObjectFactory) : Named {
     // Removes the need to import in the buildscript
