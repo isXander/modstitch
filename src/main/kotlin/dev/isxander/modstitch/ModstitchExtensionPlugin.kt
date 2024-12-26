@@ -25,7 +25,6 @@ open class ModstitchExtensionPlugin(
 
     /**
      * Allow applying the plugin to a parent project and having it apply to all children
-     * This is not recommended because it does not generate type safe kotlin dsls
      */
     private fun applyToChildren(target: Project) {
         target.childProjects.forEach { (_, child) ->

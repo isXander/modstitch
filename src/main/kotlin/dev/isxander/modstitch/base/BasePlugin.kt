@@ -6,7 +6,9 @@ import dev.isxander.modstitch.PlatformPlugin
 import dev.isxander.modstitch.base.loom.BaseLoomImpl
 import dev.isxander.modstitch.base.moddevgradle.BaseModdevgradleImpl
 import dev.isxander.modstitch.base.moddevgradle.MDGType
+import dev.isxander.modstitch.util.RegisteredGradlePlugin
 
+@RegisteredGradlePlugin
 class BasePlugin : ModstitchExtensionPlugin("base", platforms) {
     companion object {
         val platforms = mapOf<Platform, PlatformPlugin<*>>(

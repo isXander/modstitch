@@ -5,6 +5,7 @@ import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
 import org.gradle.api.Action
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
+import net.neoforged.moddevgradle.dsl.RunModel
 import net.neoforged.moddevgradle.legacyforge.dsl.MixinExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.Obfuscation
 import org.gradle.api.Project
@@ -33,11 +34,13 @@ interface BaseModDevGradleExtension {
     fun defaultRuns(namingConvention: (String) -> String = { "NeoForge $it" }) {
         configureNeoforge {
             runs {
-                create("client") {
+                fun registerOrConfigure(name: String, action: Action<RunModel>) = action(maybeCreate(name))
+
+                registerOrConfigure("client") {
                     client()
                     ideName = namingConvention("Client")
                 }
-                create("server") {
+                registerOrConfigure("server") {
                     server()
                     ideName = namingConvention("Server")
                 }

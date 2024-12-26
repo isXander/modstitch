@@ -1,7 +1,4 @@
-plugins {
-    id("dev.isxander.modstitch.base")
-    id("dev.isxander.modstitch.publishing")
-}
+
 
 fun prop(name: String, consumer: (prop: String) -> Unit) {
     (findProperty(name) as? String?)

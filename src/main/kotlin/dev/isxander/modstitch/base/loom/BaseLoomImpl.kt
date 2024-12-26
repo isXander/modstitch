@@ -41,7 +41,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
 
         target.afterEvaluate {
             if (target.modstitch.parchment.enabled.get()) {
-                error("Parchment is not supported on Loom yet.")
+                error("Parchment via Modstitch is not yet supported for Loom. This functionality will be added in Loom 1.10")
             }
         }
 
