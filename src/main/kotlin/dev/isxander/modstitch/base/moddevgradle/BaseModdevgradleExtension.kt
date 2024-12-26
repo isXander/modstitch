@@ -1,8 +1,8 @@
 package dev.isxander.modstitch.base.moddevgradle
 
+import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
-import dev.isxander.modstitch.util.isModDevGradle
 import org.gradle.api.Action
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.MixinExtension
@@ -74,7 +74,7 @@ open class BaseModDevGradleExtensionDummy : BaseModDevGradleExtension {
 val Project.msModdevgradle: BaseModDevGradleExtension
     get() = extensions.getByType<BaseModDevGradleExtension>()
 fun Project.msModdevgradle(block: BaseModDevGradleExtension.() -> Unit) {
-    if (isModDevGradle) {
+    if (project.modstitch.isModDevGradle) {
         msModdevgradle.block()
     }
 }

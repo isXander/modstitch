@@ -72,10 +72,13 @@ abstract class BaseCommonImpl<T : Any>(
         // Apply a default java plugin configuration
         applyJavaSettings(target)
 
+        // Setup processResources to replace metadata strings
         applyMetadataStringReplacements(target)
 
+        // Create modstitch remap configurations
         createProxyConfigurations(target, target.extensions.getByType<SourceSetContainer>().getByName(SourceSet.MAIN_SOURCE_SET_NAME))
 
+        // Jar-in-jar support
         target.configurations.create("modstitchJiJ") {
             isTransitive = false
 

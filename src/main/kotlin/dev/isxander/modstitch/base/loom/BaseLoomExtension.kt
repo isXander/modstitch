@@ -5,9 +5,9 @@ package dev.isxander.modstitch.base.loom
  */
 
 import dev.isxander.modstitch.PlatformExtension
+import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
-import dev.isxander.modstitch.util.isLoom
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -29,7 +29,7 @@ open class BaseLoomExtensionImpl @Inject constructor(objects: ObjectFactory, pri
 
     override val loomExtension: LoomGradleExtensionAPI by ExtensionGetter(project)
     override fun configureLoom(action: Action<LoomGradleExtensionAPI>) =
-        if (project.isLoom) action.execute(loomExtension) else {}
+        if (project.modstitch.isLoom) action.execute(loomExtension) else {}
 
     override fun applyIfCurrent(configure: Action<BaseLoomExtension>) =
         configure.execute(this)

@@ -6,20 +6,31 @@ import org.gradle.api.Project
 
 typealias ExtensionPlatforms = Map<Platform, PlatformPlugin<*>>
 
+/**
+ * A plugin that handles applying its platform-specific logic to a project
+ */
 open class ModstitchExtensionPlugin(
     private val name: String,
-    private val platforms: ExtensionPlatforms,
-    private val platform: Platform? = null
+    private val platforms: ExtensionPlatforms
 ) : Plugin<Project> {
     override fun apply(target: Project) {
-        apply(target, platform ?: getDesiredPlatformFromProperty(target))
+        val platformStr = getPlatformStrFromProperty(target)
+
+        if (platformStr == "parent") {
+            applyToChildren(target)
+        } else {
+            apply(target, parsePlatformStr(platformStr, target))
+        }
     }
 
-    private fun getDesiredPlatformFromProperty(target: Project): Platform {
-        val desiredPlatformStr = target.findProperty("modstitch.platform")?.toString()
-            ?: error("Project `${target.name}` is missing 'modstitch.platform' property. Cannot apply ")
-        return Platform.fromFriendlyName(desiredPlatformStr)
-            ?: error("Unknown platform on project `${target.name}`: '$desiredPlatformStr'. Options are: ${Platform.values().joinToString(", ") { it.friendlyName }}")
+    /**
+     * Allow applying the plugin to a parent project and having it apply to all children
+     * This is not recommended because it does not generate type safe kotlin dsls
+     */
+    private fun applyToChildren(target: Project) {
+        target.childProjects.forEach { (_, child) ->
+            apply(child, parsePlatformStr(getPlatformStrFromProperty(child), child))
+        }
     }
 
     private fun apply(target: Project, selectedPlatform: Platform) {
@@ -36,6 +47,7 @@ open class ModstitchExtensionPlugin(
         platformPlugin.apply(target)
 
         // create dud extensions for all other platforms
+        // to generate type safety so even when the platform is not applied, the script can be compiled
         unselectedPlatforms.forEach { unselectedPlatform ->
             unselectedPlatform.platformExtensionInfo?.let {
                 createDummyExtension(target, it)
@@ -52,5 +64,15 @@ open class ModstitchExtensionPlugin(
         if (!alreadyExists) {
             target.extensions.create(extension.api, extension.name, extension.dummyImpl)
         }
+    }
+
+    private fun getPlatformStrFromProperty(target: Project): String {
+        return target.findProperty("modstitch.platform")?.toString()
+            ?: error("Project `${target.name}` is missing 'modstitch.platform' property. Cannot apply `$name`")
+    }
+
+    private fun parsePlatformStr(platform: String, project: Project): Platform {
+        return Platform.fromFriendlyName(platform)
+            ?: error("Unknown platform on project `${project.name}`: '$platform'. Options are: ${platforms.keys.joinToString(", ") { it.friendlyName }}")
     }
 }
