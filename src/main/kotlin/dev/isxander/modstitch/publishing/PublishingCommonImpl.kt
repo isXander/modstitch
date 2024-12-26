@@ -2,14 +2,14 @@ package dev.isxander.modstitch.publishing
 
 import dev.isxander.modstitch.PlatformPlugin
 import dev.isxander.modstitch.base.extensions.modstitch
-import dev.isxander.modstitch.util.MODSTITCH_VERSION
+import dev.isxander.modstitch.util.printVersion
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.*
 
 abstract class PublishingCommonImpl<T : Any> : PlatformPlugin<T>() {
     override fun apply(target: Project) {
-        target.logger.lifecycle("Modstitch/Publishing: $MODSTITCH_VERSION")
+        printVersion("Publishing", target)
 
         val msPublishing = target.extensions.create(
             PublishingExtension::class.java,

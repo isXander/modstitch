@@ -2,9 +2,9 @@ package dev.isxander.modstitch.base
 
 import dev.isxander.modstitch.*
 import dev.isxander.modstitch.base.extensions.*
-import dev.isxander.modstitch.util.MODSTITCH_VERSION
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.platform
+import dev.isxander.modstitch.util.printVersion
 import net.fabricmc.loom.util.Constants
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -25,7 +25,7 @@ abstract class BaseCommonImpl<T : Any>(
     val platform: Platform,
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
-        target.logger.lifecycle("Modstitch/Base: $MODSTITCH_VERSION")
+        printVersion("Common", target)
 
         // Set the property for use elsewhere
         target.platform = platform
