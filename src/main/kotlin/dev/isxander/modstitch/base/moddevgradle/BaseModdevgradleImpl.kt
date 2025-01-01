@@ -167,9 +167,7 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         super.createProxyConfigurations(target, sourceSet)
 
         if (sourceSet.name == SourceSet.MAIN_SOURCE_SET_NAME) {
-            target.onMdgEnable {
-                createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, "localRuntime"), defer = true)
-            }
+            createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, "localRuntime"), defer = true)
         }
     }
 
