@@ -3,6 +3,7 @@ package dev.isxander.modstitch.base.moddevgradle
 import com.electronwill.nightconfig.core.Config
 import com.electronwill.nightconfig.toml.TomlFormat
 import dev.isxander.modstitch.base.BaseCommonImpl
+import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
 import dev.isxander.modstitch.base.extensions.MixinSettingsSerializer
 import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.PlatformExtensionInfo
@@ -16,6 +17,7 @@ import net.neoforged.moddevgradle.legacyforge.dsl.ObfuscationExtension
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
@@ -86,15 +88,11 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
     }
 
     fun enable(target: Project) {
-        target.logger.lifecycle("Enabling ModDevGradle for ${target.name}")
-
         if (target.pluginManager.hasPlugin(EnabledMarkerPlugin.ID)) {
             return
         }
 
         val neoExt = target.platformExt
-
-        target.logger.lifecycle("Enabled ModDevGradle for ${target.name}")
 
         if (type == MDGType.Legacy) {
             // proxy configurations will add remap configurations to this
@@ -119,7 +117,7 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         return generateModMetadata
     }
 
-    override fun createProxyConfigurations(target: Project, configuration: Configuration) {
+    override fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean) {
         val proxyModConfigurationName = configuration.name.addCamelCasePrefix("modstitchMod")
         val proxyRegularConfigurationName = configuration.name.addCamelCasePrefix("modstitch")
 
@@ -128,8 +126,15 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
             return
         }
 
+        fun deferred(action: (Configuration) -> Unit) {
+            if (!defer) return action(configuration.get())
+            return target.onMdgEnable { action(configuration.get()) }
+        }
+
         target.configurations.create(proxyModConfigurationName) proxy@{
-            configuration.extendsFrom(this@proxy)
+            deferred {
+                it.extendsFrom(this@proxy)
+            }
 
             target.onMdgEnable {
                 if (type == MDGType.Legacy)
@@ -138,7 +143,9 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         }
 
         target.configurations.create(proxyRegularConfigurationName) proxy@{
-            configuration.extendsFrom(this@proxy)
+            deferred {
+                it.extendsFrom(this@proxy)
+            }
 
             target.onMdgEnable {
                 target.configurations.named("additionalRuntimeClasspath") {
@@ -161,7 +168,7 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
 
         if (sourceSet.name == SourceSet.MAIN_SOURCE_SET_NAME) {
             target.onMdgEnable {
-                createProxyConfigurations(target, target.configurations.getByName("localRuntime"))
+                createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, "localRuntime"), defer = true)
             }
         }
     }

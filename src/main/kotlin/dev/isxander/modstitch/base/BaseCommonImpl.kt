@@ -201,10 +201,10 @@ abstract class BaseCommonImpl<T : Any>(
             sourceSet.runtimeOnlyConfigurationName,
             mainOnly(sourceSet.compileOnlyApiConfigurationName),
         ).forEach {
-            createProxyConfigurations(target, target.configurations.getByName(it))
+            createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, it))
         }
     }
-    abstract fun createProxyConfigurations(target: Project, configuration: Configuration)
+    abstract fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean = false)
 
     abstract fun configureJiJConfiguration(target: Project, configuration: Configuration)
 

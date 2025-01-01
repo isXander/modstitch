@@ -68,8 +68,10 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val modLoaderManifest = objects.property<String>()
 
-    override fun createProxyConfigurations(configuration: Configuration) = plugin.createProxyConfigurations(project, configuration)
-    override fun createProxyConfigurations(sourceSet: SourceSet) = plugin.createProxyConfigurations(project, sourceSet)
+    override fun createProxyConfigurations(configuration: Configuration) =
+        plugin.createProxyConfigurations(project, FutureNamedDomainObjectProvider.from(configuration), defer = false)
+    override fun createProxyConfigurations(sourceSet: SourceSet) =
+        plugin.createProxyConfigurations(project, sourceSet)
 
     override val platform: Platform
         get() = plugin.platform

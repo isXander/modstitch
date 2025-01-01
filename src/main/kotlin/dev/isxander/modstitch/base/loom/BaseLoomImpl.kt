@@ -2,6 +2,7 @@ package dev.isxander.modstitch.base.loom
 
 import com.google.gson.Gson
 import dev.isxander.modstitch.base.BaseCommonImpl
+import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
 import dev.isxander.modstitch.base.extensions.MixinSettingsSerializer
 import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.Platform
@@ -68,13 +69,15 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
         if (sourceSet.name != SourceSet.MAIN_SOURCE_SET_NAME) {
             target.loom.createRemapConfigurations(sourceSet)
         } else {
-            createProxyConfigurations(target, target.configurations.getByName(Constants.Configurations.LOCAL_RUNTIME))
+            createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, Constants.Configurations.LOCAL_RUNTIME))
         }
 
         super.createProxyConfigurations(target, sourceSet)
     }
 
-    override fun createProxyConfigurations(target: Project, configuration: Configuration) {
+    override fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean) {
+        if (defer) error("Cannot defer proxy configuration creation in Loom")
+
         val remapConfiguration = target.loom.remapConfigurations
             .find { it.targetConfigurationName.get() == configuration.name }
             ?: error("Loom has not created a remap configuration for ${configuration.name}, modstitch cannot proxy it.")
@@ -88,7 +91,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
             }
         }
         target.configurations.create(proxyRegularConfigurationName) proxy@{
-            configuration.extendsFrom(this@proxy)
+            configuration.get().extendsFrom(this@proxy)
         }
     }
 
