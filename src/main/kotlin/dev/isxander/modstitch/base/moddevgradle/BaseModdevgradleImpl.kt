@@ -53,8 +53,6 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
 
         super.apply(target)
 
-        println("Applying ModDevGradle for ${target.name}")
-
         neoExt.configureNeoforge {
             // version and neoForm version are set through functions
             // called via the extension
