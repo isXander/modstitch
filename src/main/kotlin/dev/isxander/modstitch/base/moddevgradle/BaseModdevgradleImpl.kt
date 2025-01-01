@@ -104,6 +104,8 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         if (type == MDGType.Legacy) {
             setupLegacyMixin(target)
         }
+
+        target.pluginManager.apply(EnabledMarkerPlugin::class)
     }
 
     override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
