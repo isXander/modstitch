@@ -9,6 +9,7 @@ import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.Side
 import dev.isxander.modstitch.util.addCamelCasePrefix
+import dev.isxander.modstitch.util.zip
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.util.Constants
 import org.gradle.api.Project
@@ -35,15 +36,19 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
 
         target.dependencies {
             "minecraft"(target.modstitch.minecraftVersion.map { "com.mojang:minecraft:$it" })
-            "mappings"(fabricExt.loomExtension.officialMojangMappings())
+
+            val parchment = target.modstitch.parchment
+            val loom = fabricExt.loomExtension
+            "mappings"(zip(parchment.enabled, parchment.parchmentArtifact.orElse("")) { enabled, parchmentArtifact ->
+                loom.layered {
+                    officialMojangMappings()
+                    if (enabled && parchmentArtifact.isNotEmpty()) {
+                        parchment(parchmentArtifact)
+                    }
+                }
+            })
 
             "modImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader:$it" })
-        }
-
-        target.afterEvaluate {
-            if (target.modstitch.parchment.enabled.get()) {
-                error("Parchment via Modstitch is not yet supported for Loom. This functionality will be added in Loom 1.10")
-            }
         }
 
         target.modstitch.modLoaderManifest = Platform.Loom.modManifest
