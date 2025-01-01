@@ -17,7 +17,6 @@ import net.neoforged.moddevgradle.legacyforge.dsl.ObfuscationExtension
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
@@ -70,6 +69,12 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
                     logLevel = Level.DEBUG
                 }
             }
+
+            mods {
+                register("mod") {
+                    sourceSet(target.sourceSets["main"])
+                }
+            }
         }
 
         target.configurations.create("localRuntime") localRuntime@{
@@ -89,8 +94,6 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         if (target.pluginManager.hasPlugin(EnabledMarkerPlugin.ID)) {
             return
         }
-
-        val neoExt = target.platformExt
 
         if (type == MDGType.Legacy) {
             // proxy configurations will add remap configurations to this
@@ -176,7 +179,7 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
             "annotationProcessor"("org.spongepowered:mixin:0.8.5:processor")
         }
 
-        val mainSourceSet = target.extensions.getByType<SourceSetContainer>()["main"]
+        val mainSourceSet = target.sourceSets["main"]
         mixin.configs.whenObjectAdded config@{
             target.mixin.apply {
                 add(mainSourceSet, this@config.refmap.get())
@@ -212,6 +215,9 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
 
     private val Project.mixin: MixinExtension
         get() = if (type == MDGType.Legacy) extensions.getByType<MixinExtension>() else error("Mixin is not available in this context")
+
+    private val Project.sourceSets: SourceSetContainer
+        get() = extensions.getByType<SourceSetContainer>()
 
     private fun Project.onMdgEnable(action: () -> Unit) = onEnable(this) { action() }
 
