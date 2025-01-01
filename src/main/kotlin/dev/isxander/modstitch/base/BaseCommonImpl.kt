@@ -6,6 +6,7 @@ import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.platform
 import dev.isxander.modstitch.util.printVersion
 import net.fabricmc.loom.util.Constants
+import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
@@ -199,7 +200,6 @@ abstract class BaseCommonImpl<T : Any>(
             sourceSet.compileOnlyConfigurationName,
             sourceSet.runtimeOnlyConfigurationName,
             mainOnly(sourceSet.compileOnlyApiConfigurationName),
-            mainOnly(Constants.Configurations.LOCAL_RUNTIME),
         ).forEach {
             createProxyConfigurations(target, target.configurations.getByName(it))
         }
@@ -208,4 +208,7 @@ abstract class BaseCommonImpl<T : Any>(
 
     abstract fun configureJiJConfiguration(target: Project, configuration: Configuration)
 
+    open fun onEnable(target: Project, action: Action<Project>) {
+        action.execute(target)
+    }
 }

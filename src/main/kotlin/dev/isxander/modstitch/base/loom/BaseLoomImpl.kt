@@ -67,6 +67,8 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
     override fun createProxyConfigurations(target: Project, sourceSet: SourceSet) {
         if (sourceSet.name != SourceSet.MAIN_SOURCE_SET_NAME) {
             target.loom.createRemapConfigurations(sourceSet)
+        } else {
+            createProxyConfigurations(target, target.configurations.getByName(Constants.Configurations.LOCAL_RUNTIME))
         }
 
         super.createProxyConfigurations(target, sourceSet)

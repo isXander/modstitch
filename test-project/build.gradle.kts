@@ -1,5 +1,3 @@
-
-
 fun prop(name: String, consumer: (prop: String) -> Unit) {
     (findProperty(name) as? String?)
         ?.let(consumer)
@@ -15,6 +13,10 @@ modstitch {
         modLicense = "ARR"
         modName = "Test Project"
         modDescription = "A test project for ModStitch"
+
+        if (isModDevGradleLegacy) {
+            modLoaderManifest = "META-INF/mods.toml"
+        }
     }
 
     loom {
@@ -22,8 +24,12 @@ modstitch {
     }
 
     moddevgradle {
-        prop("forgeVersion") { forgeVersion = it }
-        prop("neoformVersion") { neoformVersion = it }
+        enable {
+            prop("neoForgeVersion") { neoForgeVersion = it }
+            prop("forgeVersion") { forgeVersion = it }
+            prop("mcpVersion") { mcpVersion = it }
+            prop("neoFormVersion") { neoFormVersion = it }
+        }
 
         defaultRuns()
     }
@@ -37,7 +43,7 @@ modstitch {
 
 dependencies {
     modstitch.loom {
-        modstitchModImplementation("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.3")
+        modstitchModImplementation("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.4")
     }
 
     "org.commonmark:commonmark:0.21.0".let {

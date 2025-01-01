@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.isxander.modstitch"
-version = "0.3.0"
+version = "0.3.1"
 
 repositories {
     mavenCentral()
@@ -23,6 +23,11 @@ gradlePlugin {
     website = "https://github.com/isXander/modstitch"
     vcsUrl = "https://github.com/isXander/modstitch.git"
     val pluginTags = listOf("modstitch", "minecraft", "mod")
+
+    plugins.create("mdg-enable-marker") {
+        id = "dev.isxander.modstitch.base.moddevgradle.enabled-marker"
+        implementationClass = "dev.isxander.modstitch.base.moddevgradle.EnabledMarkerPlugin"
+    }
 
     fun registerExtension(extensionId: String, description: String) {
         val extensionCapitalised = extensionId.capitalize()
@@ -42,13 +47,28 @@ gradlePlugin {
 }
 
 dependencies {
-    fun plugin(id: String, version: String? = null, prop: String? = null) = "$id:$id.gradle.plugin:${version ?: property(prop!!) as String}"
+    fun plugin(id: String?, version: String? = null, prop: String? = null): String {
+        return listOfNotNull<String>(
+            id?.let { "$it:$it.gradle.plugin" },
+            version ?: prop?.let { findProperty(it)?.toString() },
+        ).joinToString(separator = ":")
+    }
+    fun pluginImplStrict(id: String, version: String? = null, prop: String? = null) {
+        implementation(plugin(id))
+        constraints {
+            implementation(plugin(id)) {
+                version {
+                    strictly(plugin(null, version, prop))
+                }
+            }
+        }
+    }
 
     // Gradle Plugins
-    implementation(plugin("fabric-loom", prop = "deps.loom"))
-    implementation(plugin("net.neoforged.moddev", prop = "deps.moddevgradle"))
-    implementation(plugin("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle"))
-    implementation(plugin("me.modmuss50.mod-publish-plugin", prop = "deps.mpp"))
+    pluginImplStrict("fabric-loom", prop = "deps.loom")
+    pluginImplStrict("net.neoforged.moddev", prop = "deps.moddevgradle")
+    pluginImplStrict("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle")
+    pluginImplStrict("me.modmuss50.mod-publish-plugin", prop = "deps.mpp")
 
     // Libraries used within the plugin
     implementation("com.google.code.gson:gson:2.11.0")

@@ -45,6 +45,8 @@ interface ModstitchExtension {
     fun moddevgradle(action: Action<BaseModDevGradleExtension>) {}
 
     val templatesSourceDirectorySet: SourceDirectorySet
+
+    fun onEnable(action: Action<Project>)
 }
 
 @Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
@@ -83,7 +85,7 @@ open class ModstitchExtensionImpl @Inject constructor(
     override fun loom(action: Action<BaseLoomExtension>) = platformExtension(action)
     override fun moddevgradle(action: Action<BaseModDevGradleExtension>) = platformExtension(action)
 
-    private inline fun <reified T> platformExtension(action: Action<T>) {
+    private inline fun <reified T : Any> platformExtension(action: Action<T>) {
         val platformExtension = plugin.platformExtension
         if (platformExtension is T) {
             action.execute(platformExtension)
@@ -92,6 +94,10 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val templatesSourceDirectorySet: SourceDirectorySet
         get() = project.extensions.getByType<SourceSetContainer>()["main"].extensions.getByName<SourceDirectorySet>("templates")
+
+    override fun onEnable(action: Action<Project>) {
+        plugin.onEnable(project, action)
+    }
 }
 
 operator fun ModstitchExtension.invoke(block: ModstitchExtension.() -> Unit) = block()

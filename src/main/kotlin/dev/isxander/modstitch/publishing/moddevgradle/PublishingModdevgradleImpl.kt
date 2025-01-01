@@ -1,5 +1,6 @@
 package dev.isxander.modstitch.publishing.moddevgradle
 
+import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.base.moddevgradle.MDGType
 import dev.isxander.modstitch.publishing.PublishingCommonImpl
 import dev.isxander.modstitch.publishing.msPublishing
@@ -12,18 +13,22 @@ class PublishingModdevgradleImpl(private val type: MDGType) : PublishingCommonIm
     override fun apply(target: Project) {
         super.apply(target)
 
-        val jar = when (type) {
-            MDGType.Regular -> target.tasks.named<Jar>("jar")
-            MDGType.Legacy -> target.tasks.named<RemapJar>("reobfJar")
-        }
+        target.modstitch.onEnable {
+            val jar = when (type) {
+                MDGType.Regular -> target.tasks.named<Jar>("jar")
+                MDGType.Legacy -> target.tasks.named<RemapJar>("reobfJar")
+            }
 
-        target.msPublishing.mpp {
-            file.assign(jar.flatMap { it.archiveFile })
+            target.msPublishing.mpp {
+                file.assign(jar.flatMap { it.archiveFile })
 
-            modLoaders.add(when (this@PublishingModdevgradleImpl.type) {
-                MDGType.Regular -> "neoforge"
-                MDGType.Legacy -> "forge"
-            })
+                modLoaders.add(
+                    when (this@PublishingModdevgradleImpl.type) {
+                        MDGType.Regular -> "neoforge"
+                        MDGType.Legacy -> "forge"
+                    }
+                )
+            }
         }
     }
 }

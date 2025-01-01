@@ -1,0 +1,21 @@
+modLoader = "javafml"
+loaderVersion = "[46,)"
+license = "${mod_license}"
+
+${mod_mixins}
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+description = '''${mod_description}'''
+
+[["dependencies.${mod_id}"]]
+modId = "forge"
+type = "required"
+ordering = "NONE"
+side = "BOTH"
+
+[["dependencies.${mod_id}"]]
+modId = "minecraft"
+type = "required"
