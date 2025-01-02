@@ -28,6 +28,8 @@ gradlePlugin {
         id = "dev.isxander.modstitch.base.moddevgradle.enabled-marker"
         implementationClass = "dev.isxander.modstitch.base.moddevgradle.EnabledMarkerPlugin"
         displayName = "ModStitch MDG Enable Marker"
+        description = "Internal plugin to for the plugin to subscribe to the event of MDG being enabled"
+        tags = pluginTags
     }
 
     fun registerExtension(extensionId: String, description: String) {
