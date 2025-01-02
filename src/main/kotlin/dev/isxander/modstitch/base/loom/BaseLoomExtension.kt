@@ -17,9 +17,20 @@ import org.gradle.kotlin.dsl.*
 import javax.inject.Inject
 
 interface BaseLoomExtension : PlatformExtension<BaseLoomExtension> {
+    /**
+     * The version of Fabric Loader to use.
+     */
     val fabricLoaderVersion: Property<String>
 
+    /**
+     * The underlying platform-specific extension: `loom`
+     */
     val loomExtension: LoomGradleExtensionAPI
+
+    /**
+     * Configures the Loom extension.
+     * This action will only be executed if the current platform is Loom.
+     */
     fun configureLoom(action: Action<LoomGradleExtensionAPI>) = action.execute(loomExtension)
 }
 

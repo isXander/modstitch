@@ -2,8 +2,6 @@ modLoader = "javafml"
 loaderVersion = "[46,)"
 license = "${mod_license}"
 
-${mod_mixins}
-
 [[mods]]
 modId = "${mod_id}"
 version = "${mod_version}"

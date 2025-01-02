@@ -18,7 +18,6 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.SourceSet
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
@@ -26,7 +25,10 @@ import org.gradle.kotlin.dsl.assign
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.slf4j.event.Level
 
-class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDevGradleExtension>(type.platform) {
+class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDevGradleExtension>(
+    type.platform,
+    ModsTomlAppendMixinDataTask::class
+) {
     private lateinit var remapConfiguration: Configuration
 
     override val platformExtensionInfo = PlatformExtensionInfo(
@@ -182,12 +184,15 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         }
 
         val mainSourceSet = target.sourceSets["main"]
-        mixin.configs.whenObjectAdded config@{
+        mixin.mixinSourceSets.whenObjectAdded obj@{
+            target.mixin.add(this@obj.sourceSet.get(), this@obj.refmapName.get())
+        }
+        mixin.configs.whenObjectAdded obj@{
             target.mixin.apply {
-                add(mainSourceSet, this@config.refmap.get())
-                config(this@config.config.get())
+                config(this@obj.config.get())
             }
         }
+        mixin.registerSourceSet(mainSourceSet, "${target.modstitch.metadata.modId.get()}.refmap.json")
 
         target.tasks.named<Jar>("jar") {
             doFirst {
@@ -217,9 +222,6 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
 
     private val Project.mixin: MixinExtension
         get() = if (type == MDGType.Legacy) extensions.getByType<MixinExtension>() else error("Mixin is not available in this context")
-
-    private val Project.sourceSets: SourceSetContainer
-        get() = extensions.getByType<SourceSetContainer>()
 
     private fun Project.onMdgEnable(action: () -> Unit) = onEnable(this) { action() }
 

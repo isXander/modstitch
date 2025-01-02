@@ -5,6 +5,7 @@ import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.printVersion
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.kotlin.dsl.*
 
 abstract class PublishingCommonImpl<T : Any> : PlatformPlugin<T>() {
@@ -17,7 +18,7 @@ abstract class PublishingCommonImpl<T : Any> : PlatformPlugin<T>() {
             PublishingExtensionImpl::class.java,
         )
 
-        val publishMod by target.tasks.creating {
+        val publishMod by target.tasks.registering {
             group = "modstitch/publishing"
         }
 
@@ -25,8 +26,12 @@ abstract class PublishingCommonImpl<T : Any> : PlatformPlugin<T>() {
         target.pluginManager.withPlugin("maven-publish") {
             msPublishing.maven {
                 publications {
-                    create<MavenPublication>("mod") {
+                    register<MavenPublication>("mod") {
                         from(target.components["java"])
+
+                        msPublishing.additionalArtifacts.whenObjectAdded obj@{
+                            artifact(this@obj)
+                        }
 
                         target.afterEvaluate {
                             groupId = target.modstitch.metadata.modGroup.get()
@@ -36,7 +41,7 @@ abstract class PublishingCommonImpl<T : Any> : PlatformPlugin<T>() {
                 }
             }
 
-            publishMod.dependsOn(target.tasks.named("publish"))
+            publishMod { dependsOn(target.tasks.named("publish")) }
         }
 
         target.pluginManager.apply("me.modmuss50.mod-publish-plugin")
@@ -44,9 +49,13 @@ abstract class PublishingCommonImpl<T : Any> : PlatformPlugin<T>() {
             msPublishing.mpp {
                 displayName = target.modstitch.metadata.modName
                 version = target.modstitch.metadata.modVersion
+
+                msPublishing.additionalArtifacts.whenObjectAdded obj@{
+                    additionalFiles.from(if (this@obj is AbstractArchiveTask) this@obj.archiveFile else this@obj)
+                }
             }
 
-            publishMod.dependsOn(target.tasks.named("publishMods"))
+            publishMod { dependsOn(target.tasks.named("publishMods")) }
         }
     }
 

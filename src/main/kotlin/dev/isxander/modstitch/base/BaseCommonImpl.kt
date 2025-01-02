@@ -5,7 +5,6 @@ import dev.isxander.modstitch.base.extensions.*
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.platform
 import dev.isxander.modstitch.util.printVersion
-import net.fabricmc.loom.util.Constants
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -19,11 +18,15 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.assign
+import org.gradle.kotlin.dsl.register
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.ide.idea.model.IdeaModel
+import kotlin.reflect.KClass
 
 abstract class BaseCommonImpl<T : Any>(
     val platform: Platform,
+    private val mixinMetadataTask: KClass<out AppendMixinDataTask>
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
         printVersion("Common", target)
@@ -85,6 +88,15 @@ abstract class BaseCommonImpl<T : Any>(
 
             configureJiJConfiguration(target, this)
         }
+
+        target.tasks.register("applyMixinConfigToModMetadata", mixinMetadataTask) {
+            group = "modstitch/internal"
+
+            modMetadataFile = target.modstitch.modLoaderManifest
+            source = target.sourceSets["main"]
+
+            onlyIf { !target.tasks["processResources"].state.upToDate && target.modstitch.mixin.addMixinsToModManifest.getOrElse(false) }
+        }.also { target.tasks["processResources"].finalizedBy(it) }
     }
 
     /**
@@ -141,6 +153,8 @@ abstract class BaseCommonImpl<T : Any>(
         // An alternative to the traditional `processResources` setup that is compatible with
         // IDE-managed runs (e.g. IntelliJ non-delegated build)
         val generateModMetadata by target.tasks.registering(ProcessResources::class) {
+            group = "modstitch/internal"
+
             val manifest = modstitch.metadata
             val mixin = modstitch.mixin
 
@@ -211,4 +225,7 @@ abstract class BaseCommonImpl<T : Any>(
     open fun onEnable(target: Project, action: Action<Project>) {
         action.execute(target)
     }
+
+    protected val Project.sourceSets: SourceSetContainer
+        get() = extensions.getByType<SourceSetContainer>()
 }

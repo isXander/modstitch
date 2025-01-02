@@ -18,34 +18,111 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import javax.inject.Inject
 
 interface ModstitchExtension {
+    /**
+     * The version of Minecraft to target by this build.
+     */
     val minecraftVersion: Property<String>
+
+    /**
+     * The Java version to target.
+     */
     val javaTarget: Property<Int>
 
+    /**
+     * The Parchment configuration block.
+     * Parchment is a parameter name mapping to compliment Official Mojang Mappings.
+     */
     val parchment: ParchmentBlock
+
+    /**
+     * The Parchment configuration block.
+     * Parchment is a parameter name mapping to compliment Official Mojang Mappings.
+     */
     fun parchment(action: Action<ParchmentBlock>) = action.execute(parchment)
 
+    /**
+     * The metadata block.
+     * Configures mod necessary and optional metadata about your mod.
+     */
     val metadata: MetadataBlock
     fun metadata(action: Action<MetadataBlock>) = action.execute(metadata)
 
+    /**
+     * The mixin configuration block.
+     * Configures Mixin settings for your mod, including registration of mixin configs.
+     */
     val mixin: MixinBlock
     fun mixin(action: Action<MixinBlock>) = action.execute(mixin)
 
+    /**
+     * The mod loader manifest to use.
+     * - On Loom, this is `fabric.mod.json`.
+     * - On ModDevGradle, this is `META-INF/neoforge.mods.toml`.
+     *   Note that on NeoForge versions prior to 1.20.5, it uses `META-INF/mods.toml`,
+     *   this is **not** set by Modstitch automatically.
+     * - On ModDevGradle Legacy, this is `META-INF/mods.toml`.
+     */
     val modLoaderManifest: Property<String>
 
+    /**
+     * Creates proxy configurations for the given configuration.
+     * This is used to abstract the differences in platforms, where some may require
+     * additional logic when the dependency is NOT a mod, and some may require additional logic
+     * when the dependency IS a mod.
+     *
+     * By calling this function, you create two configurations.
+     * For example, if you use `createProxyConfigurations(configurations.compile)`,
+     * it will create `modstitchCompile` and `modstitchModCompile`.
+     */
     fun createProxyConfigurations(configuration: Configuration)
+
+    /**
+     * Creates proxy configurations for common configurations in the given source set.
+     * This is used to abstract the differences in platforms, where some may require
+     * additional logic when the dependency is NOT a mod, and some may require additional logic
+     * when the dependency IS a mod.
+     *
+     * This method is a shorthand for calling `createProxyConfigurations` on the configurations.
+     * It creates them for the following configurations:
+     * - `compileOnly` (`modstitchCompileOnly` and `modstitchModCompileOnly`)
+     * - `implementation` (`modstitchImplementation` and `modstitchModImplementation`)
+     * - `runtimeOnly` (`modstitchRuntimeOnly` and `modstitchModRuntimeOnly`)
+     * - `compileOnlyApi` (`modstitchCompileOnlyApi` and `modstitchModCompileOnlyApi`)
+     * - `api` (`modstitchApi` and `modstitchModApi`)
+     *
+     * @see createProxyConfigurations
+     */
     fun createProxyConfigurations(sourceSet: SourceSet)
 
+    /** The active platform for this project. */
     val platform: Platform
+
+    /** Whether the active platform is Loom. */
     val isLoom: Boolean
+    /** Whether the active platform is ModDevGradle or ModDevGradle Legacy. */
     val isModDevGradle: Boolean
+    /** Whether the active platform is ModDevGradle. */
     val isModDevGradleRegular: Boolean
+    /** Whether the active platform is ModDevGradle Legacy. */
     val isModDevGradleLegacy: Boolean
 
+    /**
+     * Configures the Loom extension.
+     * The action is only executed if the active platform is Loom.
+     */
     fun loom(action: Action<BaseLoomExtension>) {}
+
+    /**
+     * Configures the ModDevGradle extension.
+     * The action is only executed if the active platform is ModDevGradle or ModDevGradle Legacy.
+     */
     fun moddevgradle(action: Action<BaseModDevGradleExtension>) {}
 
     val templatesSourceDirectorySet: SourceDirectorySet
 
+    /**
+     * Called when the underlying platform plugin is fully applied.
+     */
     fun onEnable(action: Action<Project>)
 }
 

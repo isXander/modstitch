@@ -5,9 +5,6 @@ fun prop(name: String, consumer: (prop: String) -> Unit) {
 
 modstitch {
     minecraftVersion = findProperty("minecraftVersion") as String
-    parchment {
-        mappingsVersion = "2024.12.29"
-    }
 
     metadata {
         modId = "test_project"
@@ -41,6 +38,8 @@ modstitch {
         configs.create("test") {
             side = BOTH
         }
+
+        addMixinsToModManifest = true
     }
 }
 

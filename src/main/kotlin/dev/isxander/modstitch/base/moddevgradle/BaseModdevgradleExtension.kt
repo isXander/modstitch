@@ -17,15 +17,43 @@ import javax.inject.Inject
 import org.gradle.kotlin.dsl.*
 
 interface BaseModDevGradleExtension {
+    /**
+     * Configures and enables ModDevGradle for this project.
+     * Within [MDGEnableConfiguration] you can set the versions of NeoForge, Forge, NeoForm, and MCP.
+     * You must call [enable] exactly once in your build script.
+     */
     fun enable(action: Action<MDGEnableConfiguration>)
 
+    /**
+     * The underlying platform-specific extension: `neoForge`
+     */
     val neoforgeExtension: ModDevExtension
+    /**
+     * Configures the NeoForge extension.
+     * This action will only be executed if the current platform is ModDevGradle.
+     */
     fun configureNeoforge(action: Action<ModDevExtension>) = action.execute(neoforgeExtension)
 
+    /**
+     * The underlying platform-specific extension: `obfuscation`
+     * Accessing this property will throw an exception if the current platform is not ModDevGradle Legacy.
+     */
     val obfuscationExtension: ObfuscationExtension
+    /**
+     * Configures the Obfuscation extension.
+     * This action will only be executed if the current platform is ModDevGradle Legacy.
+     */
     fun configureObfuscation(action: Action<ObfuscationExtension>) = action.execute(obfuscationExtension)
 
+    /**
+     * The underlying platform-specific extension: `mixin`
+     * Accessing this property will throw an exception if the current platform is ModDevGradle Legacy.
+     */
     val mixinExtension: MixinExtension
+    /**
+     * Configures the Mixin extension.
+     * This action will only be executed if the current platform is ModDevGradle Legacy.
+     */
     fun configureMixin(action: Action<MixinExtension>) = action.execute(mixinExtension)
 
     /**

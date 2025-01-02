@@ -20,7 +20,7 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 
-class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
+class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendMixinDataTask::class) {
     override val platformExtensionInfo = PlatformExtensionInfo(
         "msLoom",
         BaseLoomExtension::class,
@@ -53,6 +53,13 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom) {
 
         target.modstitch.modLoaderManifest = Platform.Loom.modManifest
         target.modstitch.mixin.serializer.convention(getMixinSerializer())
+
+        target.modstitch.mixin.mixinSourceSets.whenObjectAdded obj@{
+            target.loom.mixin {
+                add(this@obj.sourceSet.get(), this@obj.refmapName.get())
+            }
+        }
+        target.modstitch.mixin.registerSourceSet(target.sourceSets["main"], "${target.modstitch.metadata.modId.get()}.refmap.json")
     }
 
     override fun applyDefaultRepositories(repositories: RepositoryHandler) {
