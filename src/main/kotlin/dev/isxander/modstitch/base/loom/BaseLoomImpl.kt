@@ -56,7 +56,9 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendM
 
         target.modstitch.mixin.mixinSourceSets.whenObjectAdded obj@{
             target.loom.mixin {
-                add(this@obj.sourceSet.get(), this@obj.refmapName.get())
+                target.afterEvaluate {
+                    add(this@obj.sourceSet.get(), this@obj.refmapName.get())
+                }
             }
         }
         target.modstitch.mixin.registerSourceSet(target.sourceSets["main"], "${target.modstitch.metadata.modId.get()}.refmap.json")
