@@ -107,6 +107,11 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
             setupLegacyMixin(target)
         }
 
+        target.modstitch._finalJarTaskName = when (type) {
+            MDGType.Regular -> "jar"
+            MDGType.Legacy -> "reobfJar"
+        }
+
         target.pluginManager.apply(EnabledMarkerPlugin::class)
     }
 

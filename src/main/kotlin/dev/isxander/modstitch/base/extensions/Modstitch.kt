@@ -13,6 +13,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 import javax.inject.Inject
@@ -107,6 +108,12 @@ interface ModstitchExtension {
     val isModDevGradleLegacy: Boolean
 
     /**
+     * The final jar task for the platform.
+     * On Loom, this is `remapJar`, on ModDevGradle, this is `jar`, etc.
+     */
+    val finalJarTask: TaskProvider<out Jar>
+
+    /**
      * Configures the Loom extension.
      * The action is only executed if the active platform is Loom.
      */
@@ -171,6 +178,10 @@ open class ModstitchExtensionImpl @Inject constructor(
         }
     }
 
+    internal var _finalJarTaskName: String? = null
+    override val finalJarTask: TaskProvider<out Jar>
+        get() = _finalJarTaskName?.let { project.tasks.named<Jar>(it) } ?: error("Final jar task not set")
+
     override val templatesSourceDirectorySet: SourceDirectorySet
         get() = project.extensions.getByType<SourceSetContainer>()["main"].extensions.getByName<SourceDirectorySet>("templates")
 
@@ -180,5 +191,5 @@ open class ModstitchExtensionImpl @Inject constructor(
 }
 
 operator fun ModstitchExtension.invoke(block: ModstitchExtension.() -> Unit) = block()
-val Project.modstitch: ModstitchExtension
-    get() = extensions.getByType<ModstitchExtension>()
+internal val Project.modstitch: ModstitchExtensionImpl
+    get() = extensions.getByType<ModstitchExtension>() as ModstitchExtensionImpl

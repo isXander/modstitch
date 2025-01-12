@@ -58,6 +58,8 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendM
             target.loom.mixin {
                 target.afterEvaluate {
                     add(this@obj.sourceSet.get(), this@obj.refmapName.get())
+        target.modstitch._finalJarTaskName = "remapJar"
+
                 }
             }
         }
