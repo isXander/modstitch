@@ -20,7 +20,7 @@ modstitch {
     }
 
     loom {
-        fabricLoaderVersion = "0.16.9"
+        fabricLoaderVersion = "0.16.10"
     }
 
     moddevgradle {

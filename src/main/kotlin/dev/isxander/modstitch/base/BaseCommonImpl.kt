@@ -138,10 +138,8 @@ abstract class BaseCommonImpl<T : Any>(
             options.encoding = "UTF-8"
         }
 
-        target.pluginManager.withPlugin("plugin") {
-            target.extensions.configure<JavaPluginExtension> {
-                toolchain.languageVersion.set(target.modstitch.javaTarget.map { JavaLanguageVersion.of(it) })
-            }
+        target.extensions.configure<JavaPluginExtension> {
+            toolchain.languageVersion.set(target.modstitch.javaTarget.map { JavaLanguageVersion.of(it) })
         }
     }
 
