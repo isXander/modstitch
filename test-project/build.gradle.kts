@@ -5,6 +5,7 @@ fun prop(name: String, consumer: (prop: String) -> Unit) {
 
 modstitch {
     minecraftVersion = findProperty("minecraftVersion") as String
+    javaTarget = 17
 
     metadata {
         modId = "test_project"
@@ -68,6 +69,9 @@ val clientSourceSet = sourceSets.create("client") {
 
 modstitch.createProxyConfigurations(clientSourceSet)
 
+msShadow {
+    relocatePackage = "dev.isxander.test.libs"
+}
 
 msPublishing {
     maven {
