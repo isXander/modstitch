@@ -35,9 +35,7 @@ modstitch {
     }
 
     mixin {
-        configs.create("test") {
-            side = BOTH
-        }
+        configs.create("test")
 
         addMixinsToModManifest = true
     }
@@ -50,7 +48,9 @@ dependencies {
 
     "org.commonmark:commonmark:0.21.0".let {
         modstitchImplementation(it)
-        modstitchJiJ(it)
+        msShadow.dependency(it, mapOf(
+            "org.commonmark" to "commonmark"
+        ))
     }
 }
 

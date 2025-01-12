@@ -91,12 +91,21 @@ abstract class BaseCommonImpl<T : Any>(
 
         target.tasks.register("applyMixinConfigToModMetadata", mixinMetadataTask) {
             group = "modstitch/internal"
+            description = "Registers mixin configurations by modifying the mod metadata file."
 
-            modMetadataFile = target.modstitch.modLoaderManifest
-            source = target.sourceSets["main"]
+            val resourceFileProvider = target.sourceSets.named("main").flatMap { srcSet ->
+                target.modstitch.modLoaderManifest.map { File(srcSet.output.resourcesDir, it) }
+            }
+            inputFile = target.layout.file(resourceFileProvider)
+            outputFile = target.layout.file(resourceFileProvider)
 
-            onlyIf { !target.tasks["processResources"].state.upToDate && target.modstitch.mixin.addMixinsToModManifest.getOrElse(false) }
-        }.also { target.tasks["processResources"].finalizedBy(it) }
+            mixinConfigs = target.modstitch.mixin.configs
+
+            onlyIf { target.modstitch.mixin.addMixinsToModManifest.getOrElse(false) }
+
+            dependsOn(target.tasks["processResources"])
+            target.tasks["processResources"].finalizedBy(this)
+        }
     }
 
     /**
