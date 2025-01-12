@@ -47,6 +47,7 @@ gradlePlugin {
 
     registerExtension("base", description = "The base plugin for ModStitch")
     registerExtension("publishing", description = "Adds mod publishing functionality to ModStitch")
+    registerExtension("shadow", description = "Adds shadow plugin functionality, automatically configured for mod platforms.")
 }
 
 dependencies {
@@ -69,9 +70,16 @@ dependencies {
 
     // Gradle Plugins
     pluginImplStrict("fabric-loom", prop = "deps.loom")
+
     pluginImplStrict("net.neoforged.moddev", prop = "deps.moddevgradle")
+
     pluginImplStrict("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle")
+
     pluginImplStrict("me.modmuss50.mod-publish-plugin", prop = "deps.mpp")
+
+    pluginImplStrict("com.gradleup.shadow", prop = "deps.shadow")
+    // apache ant
+    implementation("org.apache.ant:ant:1.10.9")
 
     // Libraries used within the plugin
     implementation("com.google.code.gson:gson:2.11.0")
