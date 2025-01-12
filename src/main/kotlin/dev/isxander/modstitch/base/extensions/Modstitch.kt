@@ -137,7 +137,7 @@ interface ModstitchExtension {
 open class ModstitchExtensionImpl @Inject constructor(
     objects: ObjectFactory,
     @Transient private val project: Project,
-    private val plugin: BaseCommonImpl<*>,
+    @Transient private val plugin: BaseCommonImpl<*>,
 ) : ModstitchExtension {
     // General setup for the mod environment.
     override val minecraftVersion = objects.property<String>()

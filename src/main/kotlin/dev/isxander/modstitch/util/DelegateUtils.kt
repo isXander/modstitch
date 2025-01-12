@@ -19,12 +19,12 @@ class NotExistsDelegate<T> : ReadWriteProperty<Any, T> {
 }
 
 class ExtensionGetter<T : Any>(
-    private val container: ExtensionAware,
-    private val extensionType: KClass<T>
+    @Transient private val container: ExtensionAware,
+    private val extensionType: Class<T>
 ) : ReadOnlyProperty<Any, T> {
     override fun getValue(thisRef: Any, property: KProperty<*>): T {
         return container.extensions.getByType(extensionType)
     }
 }
 inline fun <reified T : Any> ExtensionGetter(container: ExtensionAware) =
-    ExtensionGetter(container, T::class)
+    ExtensionGetter(container, T::class.java)

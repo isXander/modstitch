@@ -89,6 +89,10 @@ open class MixinConfigurationSettings @Inject constructor(private val namekt: St
 }
 
 open class MixinSourceSet @Inject constructor(objects: ObjectFactory) {
-    val sourceSet = objects.property<SourceSet>()
+    val sourceSetName = objects.property<String>()
     val refmapName = objects.property<String>()
+
+    var sourceSet: SourceSet
+        get() = throw UnsupportedOperationException()
+        set(value) { sourceSetName.set(value.name) }
 }

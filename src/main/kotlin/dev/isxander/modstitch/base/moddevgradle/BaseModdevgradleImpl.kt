@@ -27,7 +27,7 @@ import org.slf4j.event.Level
 
 class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDevGradleExtension>(
     type.platform,
-    ModsTomlAppendMixinDataTask::class
+    ModsTomlAppendMixinDataTask::class.java
 ) {
     private lateinit var remapConfiguration: Configuration
 
@@ -39,20 +39,9 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
     )
 
     override fun apply(target: Project) {
-        val enabler = when (type) {
-            MDGType.Regular -> {
-                target.pluginManager.apply("net.neoforged.moddev")
-                RegularEnableConfiguration(this, target.extensions.getByType<NeoForgeExtension>())
-            }
-            MDGType.Legacy -> {
-                target.pluginManager.apply("net.neoforged.moddev.legacyforge")
-                LegacyEnableConfiguration(this, target.extensions.getByType<LegacyForgeExtension>())
-            }
-        }
-
-        val neoExt = createRealPlatformExtension(target, enabler, type)!!
-
         super.apply(target)
+
+        val neoExt = target.msModdevgradle
 
         neoExt.configureNeoforge {
             // version and neoForm version are set through functions
@@ -113,6 +102,22 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
         }
 
         target.pluginManager.apply(EnabledMarkerPlugin::class)
+    }
+
+    override fun applyPlugins(target: Project) {
+        super.applyPlugins(target)
+
+        val enabler = when (type) {
+            MDGType.Regular -> {
+                target.pluginManager.apply("net.neoforged.moddev")
+                RegularEnableConfiguration(this, target.extensions.getByType<NeoForgeExtension>())
+            }
+            MDGType.Legacy -> {
+                target.pluginManager.apply("net.neoforged.moddev.legacyforge")
+                LegacyEnableConfiguration(this, target.extensions.getByType<LegacyForgeExtension>())
+            }
+        }
+        createRealPlatformExtension(target, enabler, type)!!
     }
 
     override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
@@ -190,7 +195,10 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
 
         val mainSourceSet = target.sourceSets["main"]
         mixin.mixinSourceSets.whenObjectAdded obj@{
-            target.mixin.add(this@obj.sourceSet.get(), this@obj.refmapName.get())
+            target.mixin.add(
+                target.sourceSets[this@obj.sourceSetName.get()],
+                this@obj.refmapName.get()
+            )
         }
         mixin.configs.whenObjectAdded obj@{
             target.mixin.apply {

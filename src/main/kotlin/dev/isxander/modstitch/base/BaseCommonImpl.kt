@@ -22,11 +22,12 @@ import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.ide.idea.model.IdeaModel
+import java.io.File
 import kotlin.reflect.KClass
 
 abstract class BaseCommonImpl<T : Any>(
     val platform: Platform,
-    private val mixinMetadataTask: KClass<out AppendMixinDataTask>
+    private val mixinMetadataTask: Class<out AppendMixinDataTask>
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
         printVersion("Common", target)
@@ -35,15 +36,14 @@ abstract class BaseCommonImpl<T : Any>(
         target.platform = platform
 
         // Apply the necessary plugins
-        target.pluginManager.apply("java-library")
-        target.pluginManager.apply("idea")
+        applyPlugins(target)
 
         // Create our plugin extension
         val msExt = target.extensions.create(
             ModstitchExtension::class.java,
             "modstitch",
             ModstitchExtensionImpl::class.java,
-            this,
+            this
         )
 
         // Ensure the archivesBaseName is our mod-id
@@ -228,6 +228,11 @@ abstract class BaseCommonImpl<T : Any>(
     abstract fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean = false)
 
     abstract fun configureJiJConfiguration(target: Project, configuration: Configuration)
+
+    open fun applyPlugins(target: Project) {
+        target.pluginManager.apply("java-library")
+        target.pluginManager.apply("idea")
+    }
 
     open fun onEnable(target: Project, action: Action<Project>) {
         action.execute(target)

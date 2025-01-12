@@ -34,8 +34,10 @@ interface BaseLoomExtension : PlatformExtension<BaseLoomExtension> {
     fun configureLoom(action: Action<LoomGradleExtensionAPI>) = action.execute(loomExtension)
 }
 
-open class BaseLoomExtensionImpl @Inject constructor(objects: ObjectFactory, private val project: Project) :
-    BaseLoomExtension {
+open class BaseLoomExtensionImpl @Inject constructor(
+    objects: ObjectFactory,
+    @Transient private val project: Project
+) : BaseLoomExtension {
     override val fabricLoaderVersion: Property<String> = objects.property<String>()
 
     override val loomExtension: LoomGradleExtensionAPI by ExtensionGetter(project)

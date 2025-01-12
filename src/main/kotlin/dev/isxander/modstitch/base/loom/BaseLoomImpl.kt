@@ -20,7 +20,7 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 
-class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendMixinDataTask::class) {
+class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendMixinDataTask::class.java) {
     override val platformExtensionInfo = PlatformExtensionInfo(
         "msLoom",
         BaseLoomExtension::class,
@@ -29,7 +29,6 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendM
     )
 
     override fun apply(target: Project) {
-        target.pluginManager.apply("fabric-loom")
         super.apply(target)
 
         val fabricExt = createRealPlatformExtension(target)!!
@@ -54,16 +53,32 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendM
         target.modstitch.modLoaderManifest = Platform.Loom.modManifest
         target.modstitch.mixin.serializer.convention(getMixinSerializer())
 
-        target.modstitch.mixin.mixinSourceSets.whenObjectAdded obj@{
-            target.loom.mixin {
-                target.afterEvaluate {
-                    add(this@obj.sourceSet.get(), this@obj.refmapName.get())
         target.modstitch._finalJarTaskName = "remapJar"
 
+
+        target.loom.mixin {
+            target.afterEvaluate {
+                target.modstitch.mixin.mixinSourceSets.forEach { srcSet ->
+                    val sourceSetName = srcSet.sourceSetName.get()
+                    val refmapName = srcSet.refmapName
+
+                    if (sourceSetName == SourceSet.MAIN_SOURCE_SET_NAME) {
+                        defaultRefmapName = refmapName
+                    } else {
+                        add(sourceSetName, refmapName.get())
+                    }
                 }
             }
         }
-        target.modstitch.mixin.registerSourceSet(target.sourceSets["main"], "${target.modstitch.metadata.modId.get()}.refmap.json")
+        target.modstitch.mixin.registerSourceSet(
+            target.sourceSets["main"],
+            "${target.modstitch.metadata.modId.get()}.refmap.json"
+        )
+    }
+
+    override fun applyPlugins(target: Project) {
+        super.applyPlugins(target)
+        target.plugins.apply("fabric-loom")
     }
 
     override fun applyDefaultRepositories(repositories: RepositoryHandler) {
