@@ -46,7 +46,6 @@ open class ShadowExtensionImpl(
         target.dependencies.add("modstitchShadow", dependencyNotation)
         target.tasks.named<ShadowJar>("shadowJar") {
             relocations.forEach { (pkg, id) ->
-                println("Relocating $pkg to ${relocatePackage.get()}.$id")
                 relocate(pkg, "${relocatePackage.get()}.$id")
             }
         }
