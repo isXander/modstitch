@@ -100,12 +100,20 @@ abstract class BaseCommonImpl<T : Any>(
             inputFile = target.layout.file(resourceFileProvider)
             outputFile = target.layout.file(resourceFileProvider)
 
-            mixinConfigs = target.modstitch.mixin.configs
 
-            onlyIf { target.modstitch.mixin.addMixinsToModManifest.getOrElse(false) }
+
+
+            val addMixinsToModManifest = target.modstitch.mixin.addMixinsToModManifest
+            onlyIf { addMixinsToModManifest.getOrElse(false) }
 
             dependsOn(target.tasks["processResources"])
-            target.tasks["processResources"].finalizedBy(this)
+        }.also {
+            target.tasks["processResources"].finalizedBy(it)
+            target.tasks["jar"].dependsOn(it)
+
+            target.afterEvaluate {
+                it.get().mixinConfigs = target.modstitch.mixin.configs.map { it.resolve() }
+            }
         }
     }
 

@@ -55,7 +55,6 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendM
 
         target.modstitch._finalJarTaskName = "remapJar"
 
-
         target.loom.mixin {
             target.afterEvaluate {
                 target.modstitch.mixin.mixinSourceSets.forEach { srcSet ->

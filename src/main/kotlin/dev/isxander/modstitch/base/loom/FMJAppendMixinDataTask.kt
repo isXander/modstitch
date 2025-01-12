@@ -18,8 +18,8 @@ abstract class FMJAppendMixinDataTask : AppendMixinDataTask() {
 
         mixinConfigs.get().forEach {
             val obj = JsonObject()
-            obj.addProperty("config", it.config.get())
-            obj.addProperty("environment", when (it.side.get()) {
+            obj.addProperty("config", it.config)
+            obj.addProperty("environment", when (it.side) {
                 Side.Both -> "*"
                 Side.Client -> "client"
                 Side.Server -> "server"

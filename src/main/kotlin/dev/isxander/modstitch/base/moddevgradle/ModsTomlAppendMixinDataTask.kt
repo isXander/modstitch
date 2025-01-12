@@ -19,12 +19,12 @@ abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
         val mixins = config.get("mixins") as MutableList<Config>
 
         mixinConfigs.get().forEach { mixinConfig ->
-            if (mixinConfig.side.getOrElse(Side.Both) != Side.Both) {
-                logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${mixinConfig.name}")
+            if (mixinConfig.side != Side.Both) {
+                logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${mixinConfig.config}")
             }
 
             Config.inMemory().apply {
-                set("config", mixinConfig.config.get())
+                set("config", mixinConfig.config)
             }.let { mixins.add(it) }
         }
 

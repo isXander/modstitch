@@ -46,6 +46,8 @@ abstract class ShadowCommonImpl<T : Any> : PlatformPlugin<T>() {
         shadowTask {
             configurations = listOf(shadeConfiguration.get())
             archiveClassifier = ""
+
+            dependsOn("applyMixinConfigToModMetadata")
         }
     }
 }

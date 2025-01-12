@@ -1,6 +1,8 @@
 package dev.isxander.modstitch.util
 
-enum class Side {
+import java.io.Serializable
+
+enum class Side : Serializable {
     Both,
     Client,
     Server,
