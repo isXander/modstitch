@@ -108,8 +108,8 @@ interface ModstitchExtension {
     val isModDevGradleLegacy: Boolean
 
     /**
-     * The final jar task for the platform.
-     * On Loom, this is `remapJar`, on ModDevGradle, this is `jar`, etc.
+     * The jar task that will produce the final, production jar file for the platform.
+     * This may be modified by extensions, like `shadow`.
      */
     val finalJarTask: TaskProvider<out Jar>
 

@@ -9,10 +9,27 @@ import org.gradle.api.provider.Property
 import org.gradle.kotlin.dsl.*
 
 interface ShadowExtension {
+    /**
+     * The package to relocate dependencies to.
+     * This is the base package that all relocations will be relative to.
+     *
+     * If you called `dependency("something", "com.example" to "example"),
+     * the relocated package would be `$relocatePackage.example`.
+     */
     val relocatePackage: Property<String>
 
+    /**
+     * Add a dependency to shadow jar, with a map of relocations.
+     */
     fun dependency(dependencyNotation: Any, relocations: Map<PackageName, RelocateId>)
+    /**
+     * Add a dependency to shadow jar, with a map of relocations.
+     * `relocations` must not be empty.
+     */
     fun dependency(dependencyNotation: Any, vararg relocations: Pair<PackageName, RelocateId>)
+    /**
+     * Add a dependency to shadow jar, with a map of relocations.
+     */
     fun dependency(dependencyNotation: Any, action: Action<MutableMap<PackageName, RelocateId>>)
 }
 
@@ -22,7 +39,6 @@ open class ShadowExtensionImpl(
     @Transient private val target: Project
 ) : ShadowExtension {
     override val relocatePackage = objects.property<String>()
-    init { relocatePackage.convention(target.modstitch.metadata.modGroup.map { "$it.shadow" }) }
 
     override fun dependency(dependencyNotation: Any, relocations: Map<PackageName, RelocateId>) {
         require(relocations.isNotEmpty()) { "At least one relocation must be provided." }

@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.isxander.modstitch"
-version = "0.4.0"
+version = "0.5.0"
 
 repositories {
     mavenCentral()
@@ -78,8 +78,6 @@ dependencies {
     pluginImplStrict("me.modmuss50.mod-publish-plugin", prop = "deps.mpp")
 
     pluginImplStrict("com.gradleup.shadow", prop = "deps.shadow")
-    // apache ant
-    implementation("org.apache.ant:ant:1.10.9")
 
     // Libraries used within the plugin
     implementation("com.google.code.gson:gson:2.11.0")
