@@ -159,7 +159,6 @@ abstract class BaseCommonImpl<T : Any>(
             group = "modstitch/internal"
 
             val manifest = modstitch.metadata
-            val mixin = modstitch.mixin
 
             val baseProperties = mapOf<String, Provider<String>>(
                 "minecraft_version" to modstitch.minecraftVersion,
@@ -171,7 +170,6 @@ abstract class BaseCommonImpl<T : Any>(
                 "mod_group" to manifest.modGroup,
                 "mod_author" to manifest.modAuthor,
                 "mod_credits" to manifest.modCredits,
-                "mod_mixins" to mixin.serializer.map { it(mixin.configs.stream().toList(), logger) }
             )
 
             // Combine the lazy-valued base properties with the replacement properties, lazily

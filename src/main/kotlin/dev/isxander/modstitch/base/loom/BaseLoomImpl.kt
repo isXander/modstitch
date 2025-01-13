@@ -57,7 +57,6 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         }
 
         target.modstitch._modLoaderManifest = Platform.Loom.modManifest
-        target.modstitch.mixin.serializer.convention(getMixinSerializer())
 
         target.modstitch._finalJarTaskName = "remapJar"
 
@@ -135,16 +134,6 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         target.configurations.named(Constants.Configurations.INCLUDE) {
             extendsFrom(configuration)
         }
-    }
-
-    private fun getMixinSerializer(): MixinSettingsSerializer = { configs, _ ->
-        configs.map {
-            FMJMixinConfig(it.config.get(), when (it.side.get()) {
-                Side.Both -> "*"
-                Side.Client -> "client"
-                Side.Server -> "server"
-            })
-        }.let { Gson().toJson(it) }
     }
 
     private val Project.loom: LoomGradleExtensionAPI

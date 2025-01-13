@@ -35,15 +35,6 @@ interface MixinBlock {
     val addMixinsToModManifest: Property<Boolean>
 
     /**
-     * Responsible for creating the `${mod_mixins}` expansion in your mod manifest files,
-     * this is the alternative to [addMixinsToModManifest], if you'd like to expand traditionally.
-     *
-     * This property is already set by default by the platform of modstitch on this project.
-     * You probably shouldn't touch this.
-     */
-    val serializer: Property<MixinSettingsSerializer>
-
-    /**
      * Registers additional source sets to be processed by Mixin AP.
      */
     fun registerSourceSet(sourceSet: SourceSet, refmapName: String)
@@ -52,7 +43,6 @@ interface MixinBlock {
     val mixinSourceSets: DomainObjectSet<MixinSourceSet>
 }
 open class MixinBlockImpl @Inject constructor(private val objects: ObjectFactory) : MixinBlock {
-    override val serializer = objects.property<MixinSettingsSerializer>()
     override val configs = objects.domainObjectContainer(MixinConfigurationSettings::class)
     override val addMixinsToModManifest = objects.property<Boolean>().convention(false)
     override val mixinSourceSets = objects.domainObjectSet(MixinSourceSet::class)
