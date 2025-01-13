@@ -14,10 +14,6 @@ modstitch {
         modLicense = "ARR"
         modName = "Test Project"
         modDescription = "A test project for ModStitch"
-
-        if (isModDevGradleLegacy) {
-            modLoaderManifest = "META-INF/mods.toml"
-        }
     }
 
     loom {
@@ -31,6 +27,7 @@ modstitch {
             prop("mcpVersion") { mcpVersion = it }
             prop("neoFormVersion") { neoFormVersion = it }
         }
+        println(modLoaderManifest)
 
         defaultRuns()
     }

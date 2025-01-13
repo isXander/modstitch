@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
 
 abstract class BaseCommonImpl<T : Any>(
     val platform: Platform,
-    private val mixinMetadataTask: Class<out AppendMixinDataTask>
+    private val mixinMetadataTask: Class<out AppendMixinDataTask>,
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
         printVersion("Common", target)
@@ -92,29 +92,12 @@ abstract class BaseCommonImpl<T : Any>(
 
         target.tasks.register("applyMixinConfigToModMetadata", mixinMetadataTask) {
             group = "modstitch/internal"
-            description = "Registers mixin configurations by modifying the mod metadata file."
 
-            val resourceFileProvider = target.sourceSets.named("main").flatMap { srcSet ->
-                target.modstitch.modLoaderManifest.map { File(srcSet.output.resourcesDir, it) }
-            }
-            inputFile = target.layout.file(resourceFileProvider)
-            outputFile = target.layout.file(resourceFileProvider)
+            modMetadataFile = target.provider { msExt.modLoaderManifest }
+            source = target.sourceSets["main"]
 
-
-
-
-            val addMixinsToModManifest = target.modstitch.mixin.addMixinsToModManifest
-            onlyIf { addMixinsToModManifest.getOrElse(false) }
-
-            dependsOn(target.tasks["processResources"])
-        }.also {
-            target.tasks["processResources"].finalizedBy(it)
-            target.tasks["jar"].dependsOn(it)
-
-            target.afterEvaluate {
-                it.get().mixinConfigs = target.modstitch.mixin.configs.map { it.resolve() }
-            }
-        }
+            onlyIf { !target.tasks["processResources"].state.upToDate && target.modstitch.mixin.addMixinsToModManifest.getOrElse(false) }
+        }.also { target.tasks["processResources"].finalizedBy(it) }
     }
 
     /**
@@ -210,7 +193,7 @@ abstract class BaseCommonImpl<T : Any>(
 
             exclude { fileTreeElement ->
                 // At execution time, modLoaderManifest should be resolvable
-                val currentManifest = modstitch.modLoaderManifest.orNull
+                val currentManifest = modstitch.modLoaderManifest
                 // Now build the set of manifests to exclude dynamically
                 val manifestsToExclude = Platform.allModManifests - currentManifest
                 // Return true if the file should be excluded, false otherwise

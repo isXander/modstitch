@@ -1,6 +1,9 @@
 package dev.isxander.modstitch.base.loom
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import dev.isxander.modstitch.base.BaseCommonImpl
 import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
 import dev.isxander.modstitch.base.extensions.MixinSettingsSerializer
@@ -20,7 +23,10 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 
-class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendMixinDataTask::class.java) {
+class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
+    Platform.Loom,
+    FMJAppendMixinDataTask::class.java,
+) {
     override val platformExtensionInfo = PlatformExtensionInfo(
         "msLoom",
         BaseLoomExtension::class,
@@ -50,7 +56,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendM
             "modImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader:$it" })
         }
 
-        target.modstitch.modLoaderManifest = Platform.Loom.modManifest
+        target.modstitch._modLoaderManifest = Platform.Loom.modManifest
         target.modstitch.mixin.serializer.convention(getMixinSerializer())
 
         target.modstitch._finalJarTaskName = "remapJar"
@@ -89,7 +95,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(Platform.Loom, FMJAppendM
         val generateModMetadata = super.applyMetadataStringReplacements(target)
 
         target.tasks.named("ideaSyncTask") {
-            dependsOn("generateModMetadata")
+            dependsOn(generateModMetadata)
         }
 
         return generateModMetadata

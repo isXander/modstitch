@@ -15,7 +15,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
-import org.gradle.language.jvm.tasks.ProcessResources
+import java.util.*
 import javax.inject.Inject
 
 interface ModstitchExtension {
@@ -58,12 +58,12 @@ interface ModstitchExtension {
     /**
      * The mod loader manifest to use.
      * - On Loom, this is `fabric.mod.json`.
-     * - On ModDevGradle, this is `META-INF/neoforge.mods.toml`.
-     *   Note that on NeoForge versions prior to 1.20.5, it uses `META-INF/mods.toml`,
-     *   this is **not** set by Modstitch automatically.
+     * - On ModDevGradle (>1.20.4), this is `META-INF/neoforge.mods.toml`.
+     * - On ModDevGradle (<1.20.5), this is `META-INF/mods.toml`.
      * - On ModDevGradle Legacy, this is `META-INF/mods.toml`.
+     * - In environments where there is no mod loader manifest, like vanilla mode of MDG, this is an empty string.
      */
-    val modLoaderManifest: Property<String>
+    val modLoaderManifest: String
 
     /**
      * Creates proxy configurations for the given configuration.
@@ -150,7 +150,9 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val mixin = objects.newInstance<MixinBlockImpl>(objects)
 
-    override val modLoaderManifest = objects.property<String>()
+    var _modLoaderManifest: String? = null
+    override val modLoaderManifest
+        get() = _modLoaderManifest ?: error("Mod loader manifest not set")
 
     override fun createProxyConfigurations(configuration: Configuration) =
         plugin.createProxyConfigurations(project, FutureNamedDomainObjectProvider.from(configuration), defer = false)

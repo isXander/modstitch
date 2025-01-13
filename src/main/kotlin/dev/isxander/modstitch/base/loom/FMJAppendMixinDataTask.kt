@@ -16,10 +16,10 @@ abstract class FMJAppendMixinDataTask : AppendMixinDataTask() {
         val json = gson.fromJson(contents, JsonObject::class.java)
         val mixins = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }
 
-        mixinConfigs.get().forEach {
+        project.modstitch.mixin.configs.forEach {
             val obj = JsonObject()
-            obj.addProperty("config", it.config)
-            obj.addProperty("environment", when (it.side) {
+            obj.addProperty("config", it.config.get())
+            obj.addProperty("environment", when (it.side.get()) {
                 Side.Both -> "*"
                 Side.Client -> "client"
                 Side.Server -> "server"

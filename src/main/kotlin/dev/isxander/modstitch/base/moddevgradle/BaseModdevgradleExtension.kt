@@ -3,6 +3,7 @@ package dev.isxander.modstitch.base.moddevgradle
 import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
+import dev.isxander.modstitch.util.NotExistsNullableDelegate
 import net.neoforged.moddevgradle.dsl.ModDevExtension
 import org.gradle.api.Action
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
@@ -123,14 +124,14 @@ sealed interface MDGEnableConfiguration {
 }
 sealed class MDGEnableConfigurationInternal(protected val impl: BaseModdevgradleImpl) : MDGEnableConfiguration {
     internal open fun enable(target: Project) {
-        impl.enable(target)
+        impl.enable(target, this)
     }
 }
 class RegularEnableConfiguration(impl: BaseModdevgradleImpl, private val extension: NeoForgeExtension) : MDGEnableConfigurationInternal(impl) {
     override var neoForgeVersion: String? = null
     override var neoFormVersion: String? = null
-    override var forgeVersion: String? by NotExistsDelegate()
-    override var mcpVersion: String? by NotExistsDelegate()
+    override var forgeVersion: String? by NotExistsNullableDelegate()
+    override var mcpVersion: String? by NotExistsNullableDelegate()
 
     override fun enable(target: Project) {
         extension.enable {
@@ -141,8 +142,8 @@ class RegularEnableConfiguration(impl: BaseModdevgradleImpl, private val extensi
     }
 }
 class LegacyEnableConfiguration(impl: BaseModdevgradleImpl, private val extension: LegacyForgeExtension) : MDGEnableConfigurationInternal(impl) {
-    override var neoForgeVersion: String? by NotExistsDelegate()
-    override var neoFormVersion: String? by NotExistsDelegate()
+    override var neoForgeVersion: String? by NotExistsNullableDelegate()
+    override var neoFormVersion: String? by NotExistsNullableDelegate()
     override var forgeVersion: String? = null
     override var mcpVersion: String? = null
 

@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.isxander.modstitch"
-version = "0.5.3"
+version = "0.5.4"
 
 repositories {
     mavenCentral()
@@ -82,6 +82,7 @@ dependencies {
     // Libraries used within the plugin
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.electronwill.night-config:toml:3.8.1")
+    implementation("org.semver4j:semver4j:5.5.0")
 }
 
 tasks.jar {

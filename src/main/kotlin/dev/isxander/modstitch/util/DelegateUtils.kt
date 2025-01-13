@@ -18,6 +18,16 @@ class NotExistsDelegate<T> : ReadWriteProperty<Any, T> {
     }
 }
 
+class NotExistsNullableDelegate<T> : ReadWriteProperty<Any, T?> {
+    override fun getValue(thisRef: Any, property: KProperty<*>): T? {
+        return null
+    }
+
+    override fun setValue(thisRef: Any, property: KProperty<*>, value: T?) {
+        error("Property ${property.name} does not exist")
+    }
+}
+
 class ExtensionGetter<T : Any>(
     @Transient private val container: ExtensionAware,
     private val extensionType: Class<T>

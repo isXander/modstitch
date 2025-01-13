@@ -23,11 +23,14 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 import org.gradle.kotlin.dsl.assign
 import org.gradle.language.jvm.tasks.ProcessResources
+import org.semver4j.Semver
 import org.slf4j.event.Level
 
-class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDevGradleExtension>(
+class BaseModdevgradleImpl(
+    private val type: MDGType
+) : BaseCommonImpl<BaseModDevGradleExtension>(
     type.platform,
-    ModsTomlAppendMixinDataTask::class.java
+    ModsTomlAppendMixinDataTask::class.java,
 ) {
     private lateinit var remapConfiguration: Configuration
 
@@ -73,17 +76,23 @@ class BaseModdevgradleImpl(private val type: MDGType) : BaseCommonImpl<BaseModDe
                 extendsFrom(this@localRuntime)
             }
         }
-
-        target.modstitch.modLoaderManifest = when (type) {
-            MDGType.Regular -> Platform.MDG.modManifest
-            MDGType.Legacy -> Platform.MDGLegacy.modManifest
-        }
-        target.modstitch.mixin.serializer.convention(getMixinSerializer())
     }
 
-    fun enable(target: Project) {
+    fun enable(target: Project, configuration: MDGEnableConfiguration) {
         if (target.pluginManager.hasPlugin(EnabledMarkerPlugin.ID)) {
             return
+        }
+
+        target.modstitch._modLoaderManifest = when {
+            configuration.neoForgeVersion != null -> {
+                if (Semver.coerce(configuration.neoForgeVersion)?.satisfies("<20.5") == true) {
+                    Platform.MDGLegacy.modManifest
+                } else {
+                    Platform.MDG.modManifest
+                }
+            }
+            configuration.forgeVersion != null -> Platform.MDGLegacy.modManifest
+            else -> "" // mcp or neoform don't have a manifest.
         }
 
         if (type == MDGType.Legacy) {

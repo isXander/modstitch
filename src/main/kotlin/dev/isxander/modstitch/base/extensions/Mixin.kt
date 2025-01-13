@@ -29,6 +29,8 @@ interface MixinBlock {
      * Automatically appends your configured mixins into your mod manifest, like
      * `fabric.mod.json` or `neoforge.mods.toml`.
      * Defaults to false for backwards compatibility reasons.
+     *
+     * Ensure that your mod manifest is in the `templates` directory in order for this to work.
      */
     val addMixinsToModManifest: Property<Boolean>
 
