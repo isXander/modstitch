@@ -67,7 +67,9 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
                     val refmapName = srcSet.refmapName
 
                     if (sourceSetName == SourceSet.MAIN_SOURCE_SET_NAME) {
-                        defaultRefmapName = refmapName
+                        // https://github.com/FabricMC/fabric-loom/issues/1249
+                        // defaultRefmapName cannot be set in afterEvaluate
+                        //defaultRefmapName = refmapName
                     } else {
                         add(sourceSetName, refmapName.get())
                     }
@@ -76,7 +78,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         }
         target.modstitch.mixin.registerSourceSet(
             target.sourceSets["main"],
-            "${target.modstitch.metadata.modId.get()}.refmap.json"
+            target.modstitch.metadata.modId.map { "$it.refmap.json" },
         )
     }
 

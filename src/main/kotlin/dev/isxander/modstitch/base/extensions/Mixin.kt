@@ -8,6 +8,7 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.logging.Logger
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.annotations.ApiStatus
@@ -37,6 +38,11 @@ interface MixinBlock {
     /**
      * Registers additional source sets to be processed by Mixin AP.
      */
+    fun registerSourceSet(sourceSet: SourceSet, refmapName: Provider<String>)
+
+    /**
+     * Registers additional source sets to be processed by Mixin AP.
+     */
     fun registerSourceSet(sourceSet: SourceSet, refmapName: String)
 
     @get:ApiStatus.Internal
@@ -46,6 +52,12 @@ open class MixinBlockImpl @Inject constructor(private val objects: ObjectFactory
     override val configs = objects.domainObjectContainer(MixinConfigurationSettings::class)
     override val addMixinsToModManifest = objects.property<Boolean>().convention(false)
     override val mixinSourceSets = objects.domainObjectSet(MixinSourceSet::class)
+    override fun registerSourceSet(sourceSet: SourceSet, refmapName: Provider<String>) {
+        objects.newInstance<MixinSourceSet>().apply {
+            this.sourceSet = sourceSet
+            this.refmapName.set(refmapName)
+        }.also { mixinSourceSets.add(it) }
+    }
     override fun registerSourceSet(sourceSet: SourceSet, refmapName: String) {
         objects.newInstance<MixinSourceSet>().apply {
             this.sourceSet = sourceSet
