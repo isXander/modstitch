@@ -18,15 +18,16 @@ class ShadowLoomImpl : ShadowCommonImpl<Nothing>() {
     ) {
         super.configureShadowTask(target, shadowTask, shadeConfiguration)
 
-        // Shadow jar is now the final jar of the build
-        target.modstitch._finalJarTaskName = "shadowJar"
-
         target.tasks.named<RemapJarTask>("remapJar") {
             dependsOn(shadowTask)
 
             inputFile = shadowTask.flatMap { it.archiveFile }
 
-            archiveClassifier = "slim"
+            archiveClassifier = ""
+        }
+
+        shadowTask {
+            archiveClassifier = "dev-fat"
         }
     }
 }
