@@ -8,6 +8,7 @@ import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 
 class ShadowLoomImpl : ShadowCommonImpl<Nothing>() {
@@ -28,6 +29,12 @@ class ShadowLoomImpl : ShadowCommonImpl<Nothing>() {
 
         shadowTask {
             archiveClassifier = "dev-fat"
+        }
+
+        target.tasks.named<Jar>("jar") {
+            // shadowJar does not use jar as an input
+            // bundling jar is a waste of time
+            enabled = false
         }
     }
 }

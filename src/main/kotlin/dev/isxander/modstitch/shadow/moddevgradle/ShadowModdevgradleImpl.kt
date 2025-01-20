@@ -45,5 +45,11 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
                 }
             }
         }
+
+        target.tasks.named<Jar>("jar") {
+            // shadowJar does not use jar as an input
+            // bundling jar is a waste of time
+            enabled = false
+        }
     }
 }
