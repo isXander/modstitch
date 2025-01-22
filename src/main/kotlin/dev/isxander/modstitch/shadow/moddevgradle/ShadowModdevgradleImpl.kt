@@ -22,9 +22,6 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
     ) {
         super.configureShadowTask(target, shadowTask, shadeConfiguration)
 
-        // Shadow jar is now the final jar of the build
-        target.modstitch._finalJarTaskName = "shadowJar"
-
         when (type) {
             MDGType.Regular -> {
                 target.modstitch.onEnable {
@@ -32,6 +29,8 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
                         archiveClassifier = "slim"
                     }
                 }
+
+                target.modstitch._finalJarTaskName = "shadowJar"
             }
             MDGType.Legacy -> {
                 target.modstitch.onEnable {
@@ -41,7 +40,8 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
                 }
 
                 target.extensions.configure<ObfuscationExtension> {
-                    reobfuscate(shadowTask, target.extensions.getByType<SourceSetContainer>()["main"])
+                    target.modstitch._finalJarTaskName = reobfuscate(shadowTask, target.extensions.getByType<SourceSetContainer>()["main"])
+                        .name
                 }
             }
         }

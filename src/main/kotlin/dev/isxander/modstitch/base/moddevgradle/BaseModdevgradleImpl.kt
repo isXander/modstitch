@@ -76,6 +76,11 @@ class BaseModdevgradleImpl(
                 extendsFrom(this@localRuntime)
             }
         }
+
+        target.modstitch._finalJarTaskName = when (type) {
+            MDGType.Regular -> "jar"
+            MDGType.Legacy -> "reobfJar"
+        }
     }
 
     fun enable(target: Project, configuration: MDGEnableConfiguration) {
@@ -103,11 +108,6 @@ class BaseModdevgradleImpl(
 
         if (type == MDGType.Legacy) {
             setupLegacyMixin(target)
-        }
-
-        target.modstitch._finalJarTaskName = when (type) {
-            MDGType.Regular -> "jar"
-            MDGType.Legacy -> "reobfJar"
         }
 
         target.pluginManager.apply(EnabledMarkerPlugin::class)

@@ -181,6 +181,10 @@ open class ModstitchExtensionImpl @Inject constructor(
     }
 
     internal var _finalJarTaskName: String? = null
+        set(value) {
+            field = value
+            println("Final jar task set to $value")
+        }
     override val finalJarTask: TaskProvider<out Jar>
         get() = _finalJarTaskName?.let { project.tasks.named<Jar>(it) } ?: error("Final jar task not set")
 
