@@ -36,6 +36,7 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
                 target.modstitch.onEnable {
                     target.tasks.named<RemapJar>("reobfJar") {
                         archiveClassifier = "slim"
+                        destinationDirectory = project.layout.buildDirectory.map { it.dir("devlibs") }
                     }
                 }
 
