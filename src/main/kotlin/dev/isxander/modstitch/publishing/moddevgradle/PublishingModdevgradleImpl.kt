@@ -14,14 +14,7 @@ class PublishingModdevgradleImpl(private val type: MDGType) : PublishingCommonIm
         super.apply(target)
 
         target.modstitch.onEnable {
-            val jar = when (type) {
-                MDGType.Regular -> target.tasks.named<Jar>("jar")
-                MDGType.Legacy -> target.tasks.named<RemapJar>("reobfJar")
-            }
-
             target.msPublishing.mpp {
-                file.assign(jar.flatMap { it.archiveFile })
-
                 modLoaders.add(
                     when (this@PublishingModdevgradleImpl.type) {
                         MDGType.Regular -> "neoforge"

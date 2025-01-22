@@ -11,10 +11,7 @@ class PublishingLoomImpl : PublishingCommonImpl<Nothing>() {
     override fun apply(target: Project) {
         super.apply(target)
 
-        val remapJar = target.tasks.named<RemapJarTask>("remapJar")
-
         target.msPublishing.mpp {
-            file.assign(remapJar.flatMap { it.archiveFile })
             modLoaders.add("fabric")
         }
     }

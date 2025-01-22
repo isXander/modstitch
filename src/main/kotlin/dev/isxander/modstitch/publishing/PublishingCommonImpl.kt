@@ -51,6 +51,7 @@ abstract class PublishingCommonImpl<T : Any> : PlatformPlugin<T>() {
                 version = target.modstitch.metadata.modVersion
 
                 msPublishing.additionalArtifacts.whenObjectAdded obj@{
+                    file.set(target.provider { target.modstitch.finalJarTask.flatMap { it.archiveFile } }.flatMap { it })
                     additionalFiles.from(if (this@obj is AbstractArchiveTask) this@obj.archiveFile else this@obj)
                 }
             }
