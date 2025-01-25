@@ -22,6 +22,12 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
     ) {
         super.configureShadowTask(target, shadowTask, shadeConfiguration)
 
+        shadowTask {
+            target.modstitch.onEnable {
+                from(target.tasks.named("jarJar"))
+            }
+        }
+
         when (type) {
             MDGType.Regular -> {
                 target.modstitch.onEnable {
