@@ -4,7 +4,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dev.isxander.modstitch.base.AppendMixinDataTask
-import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.Side
 
 abstract class FMJAppendMixinDataTask : AppendMixinDataTask() {
@@ -16,10 +15,10 @@ abstract class FMJAppendMixinDataTask : AppendMixinDataTask() {
         val json = gson.fromJson(contents, JsonObject::class.java)
         val mixins = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }
 
-        project.modstitch.mixin.configs.forEach {
+        mixinConfigs.get().forEach {
             val obj = JsonObject()
-            obj.addProperty("config", it.config.get())
-            obj.addProperty("environment", when (it.side.get()) {
+            obj.addProperty("config", it.config)
+            obj.addProperty("environment", when (it.side) {
                 Side.Both -> "*"
                 Side.Client -> "client"
                 Side.Server -> "server"

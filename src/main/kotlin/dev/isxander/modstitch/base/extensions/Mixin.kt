@@ -90,6 +90,10 @@ open class MixinConfigurationSettings @Inject constructor(private val namekt: St
     val side: Property<Side> = objects.property<Side>().convention(Side.Both)
 
     override fun getName(): String = namekt
+
+    internal fun resolved(): FinalMixinConfigurationSettings {
+        return FinalMixinConfigurationSettings(config.get(), side.getOrElse(Side.Both))
+    }
 }
 
 open class MixinSourceSet @Inject constructor(objects: ObjectFactory) {
@@ -100,3 +104,5 @@ open class MixinSourceSet @Inject constructor(objects: ObjectFactory) {
         get() = throw UnsupportedOperationException()
         set(value) { sourceSetName.set(value.name) }
 }
+
+data class FinalMixinConfigurationSettings(val config: String, val side: Side)

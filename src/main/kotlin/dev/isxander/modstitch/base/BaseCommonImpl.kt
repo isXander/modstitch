@@ -93,10 +93,7 @@ abstract class BaseCommonImpl<T : Any>(
         target.tasks.register("applyMixinConfigToModMetadata", mixinMetadataTask) {
             group = "modstitch/internal"
 
-            modMetadataFile = target.provider { msExt.modLoaderManifest }
-            source = target.sourceSets["main"]
-
-            onlyIf { !target.tasks["processResources"].state.upToDate && target.modstitch.mixin.addMixinsToModManifest.getOrElse(false) }
+            AppendMixinDataTask.configureTask(this, target, target.sourceSets["main"], msExt.modLoaderManifest)
         }.also { target.tasks["processResources"].finalizedBy(it) }
     }
 

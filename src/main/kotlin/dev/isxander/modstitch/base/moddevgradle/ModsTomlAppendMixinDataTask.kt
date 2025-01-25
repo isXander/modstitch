@@ -3,7 +3,6 @@ package dev.isxander.modstitch.base.moddevgradle
 import com.electronwill.nightconfig.core.Config
 import com.electronwill.nightconfig.toml.TomlFormat
 import dev.isxander.modstitch.base.AppendMixinDataTask
-import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.Side
 
 abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
@@ -18,13 +17,13 @@ abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
 
         val mixins = config.get("mixins") as MutableList<Config>
 
-        project.modstitch.mixin.configs.forEach {
-            if (it.side.getOrElse(Side.Both) != Side.Both) {
-                logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${it.name}")
+        mixinConfigs.get().forEach {
+            if (it.side != Side.Both) {
+                logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${it.config}")
             }
 
             Config.inMemory().apply {
-                set("config", it.config.get())
+                set("config", it.config)
             }.let { mixins.add(it) }
         }
 
