@@ -114,4 +114,11 @@ publishing {
     }
 }
 
+val releasePlugin by tasks.registering {
+    group = "modstitch"
+
+    dependsOn("publishPlugins")
+    dependsOn("publishAllPublicationsToXanderReleasesRepository")
+}
+
 
