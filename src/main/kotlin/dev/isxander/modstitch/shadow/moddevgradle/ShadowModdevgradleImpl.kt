@@ -4,6 +4,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.base.moddevgradle.MDGType
 import dev.isxander.modstitch.shadow.ShadowCommonImpl
+import dev.isxander.modstitch.shadow.devlib
 import net.neoforged.moddevgradle.legacyforge.dsl.ObfuscationExtension
 import net.neoforged.moddevgradle.legacyforge.tasks.RemapJar
 import org.gradle.api.NamedDomainObjectProvider
@@ -22,41 +23,46 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
     ) {
         super.configureShadowTask(target, shadowTask, shadeConfiguration)
 
+        /**
+         * Creates a new Jar task that adds the jarJar output to the shadowJar output.
+         * You cannot directly source jarJar into shadow as it would flatten all jars into the main one,
+         * breaking jarJar.
+         */
+        val jijJar = target.tasks.register<Jar>("jijJar") {
+            val shadowJar = target.tasks.named<ShadowJar>("shadowJar")
+            from(target.zipTree(shadowJar.map { it.archiveFile }))
+            dependsOn(shadowJar)
+
+            val jarJar = target.tasks.named("jarJar")
+            from(jarJar)
+            dependsOn(jarJar)
+        }
+        target.tasks["assemble"].dependsOn(jijJar)
+
         shadowTask {
-            target.modstitch.onEnable {
-                from(target.tasks.named("jarJar"))
-            }
+            archiveClassifier = "dev-fat"
+            devlib()
         }
 
         when (type) {
             MDGType.Regular -> {
-                target.modstitch.onEnable {
-                    target.tasks.named<Jar>("jar") {
-                        archiveClassifier = "slim"
-                    }
-                }
-
-                target.modstitch._finalJarTaskName = "shadowJar"
+                target.modstitch._finalJarTaskName = "jijJar"
             }
             MDGType.Legacy -> {
                 target.modstitch.onEnable {
                     target.tasks.named<RemapJar>("reobfJar") {
-                        archiveClassifier = "slim"
-                        destinationDirectory = project.layout.buildDirectory.map { it.dir("devlibs") }
+                        // reobfJar takes jar, which is disabled
+                        enabled = false
                     }
                 }
 
                 target.extensions.configure<ObfuscationExtension> {
-                    target.modstitch._finalJarTaskName = reobfuscate(shadowTask, target.extensions.getByType<SourceSetContainer>()["main"])
-                        .name
+                    target.modstitch._finalJarTaskName = reobfuscate(
+                        jijJar,
+                        target.extensions.getByType<SourceSetContainer>()["main"]
+                    ).name
                 }
             }
-        }
-
-        target.tasks.named<Jar>("jar") {
-            // shadowJar does not use jar as an input
-            // bundling jar is a waste of time
-            enabled = false
         }
     }
 }

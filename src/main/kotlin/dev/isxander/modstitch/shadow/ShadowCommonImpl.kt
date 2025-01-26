@@ -8,6 +8,8 @@ import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.kotlin.dsl.*
 
 abstract class ShadowCommonImpl<T : Any> : PlatformPlugin<T>() {
@@ -28,6 +30,11 @@ abstract class ShadowCommonImpl<T : Any> : PlatformPlugin<T>() {
             isTransitive = false
         }
 
+        target.tasks.named<Jar>("jar") {
+            // shadowJar does not use jar as an input, so bundling jar is a waste of time
+            enabled = false
+        }
+
         target.pluginManager.withPlugin("com.gradleup.shadow") {
             val shadowJar = target.tasks.named<ShadowJar>("shadowJar")
             configureShadowTask(target, shadowJar, modstitchShadow)
@@ -46,6 +53,11 @@ abstract class ShadowCommonImpl<T : Any> : PlatformPlugin<T>() {
         shadowTask {
             configurations = listOf(shadeConfiguration.get())
             archiveClassifier = ""
+
         }
     }
+}
+
+fun AbstractArchiveTask.devlib() {
+    destinationDirectory = project.layout.buildDirectory.map { it.dir("devlibs") }
 }
