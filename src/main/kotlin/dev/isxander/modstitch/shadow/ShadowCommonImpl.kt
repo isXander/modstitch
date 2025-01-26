@@ -38,10 +38,6 @@ abstract class ShadowCommonImpl<T : Any> : PlatformPlugin<T>() {
         target.pluginManager.withPlugin("com.gradleup.shadow") {
             val shadowJar = target.tasks.named<ShadowJar>("shadowJar")
             configureShadowTask(target, shadowJar, modstitchShadow)
-
-            target.artifacts {
-                add("archives", shadowJar)
-            }
         }
     }
 
@@ -53,7 +49,10 @@ abstract class ShadowCommonImpl<T : Any> : PlatformPlugin<T>() {
         shadowTask {
             configurations = listOf(shadeConfiguration.get())
             archiveClassifier = ""
+        }
 
+        target.artifacts {
+            add("archives", shadowTask)
         }
     }
 }

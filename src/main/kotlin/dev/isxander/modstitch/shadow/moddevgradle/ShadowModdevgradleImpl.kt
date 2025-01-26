@@ -38,6 +38,9 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
             dependsOn(jarJar)
         }
         target.tasks["assemble"].dependsOn(jijJar)
+        target.artifacts {
+            add("archives", jijJar)
+        }
 
         shadowTask {
             archiveClassifier = "dev-fat"
@@ -57,10 +60,14 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
                 }
 
                 target.extensions.configure<ObfuscationExtension> {
-                    target.modstitch._finalJarTaskName = reobfuscate(
+                    val reobfJar = reobfuscate(
                         jijJar,
                         target.extensions.getByType<SourceSetContainer>()["main"]
-                    ).name
+                    )
+                    target.modstitch._finalJarTaskName = reobfJar.name
+                    target.artifacts {
+                        add("archives", reobfJar)
+                    }
                 }
             }
         }
