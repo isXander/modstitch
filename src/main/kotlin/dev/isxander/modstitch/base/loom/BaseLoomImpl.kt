@@ -61,18 +61,14 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         target.modstitch._finalJarTaskName = "remapJar"
 
         target.loom.mixin {
-            target.afterEvaluate {
-                target.modstitch.mixin.mixinSourceSets.forEach { srcSet ->
-                    val sourceSetName = srcSet.sourceSetName.get()
-                    val refmapName = srcSet.refmapName
+            target.modstitch.mixin.mixinSourceSets.whenObjectAdded {
+                val sourceSetName = this@whenObjectAdded.sourceSetName
+                val refmapName = this@whenObjectAdded.refmapName
 
-                    if (sourceSetName == SourceSet.MAIN_SOURCE_SET_NAME) {
-                        // https://github.com/FabricMC/fabric-loom/issues/1249
-                        // defaultRefmapName cannot be set in afterEvaluate
-                        //defaultRefmapName = refmapName
-                    } else {
-                        add(sourceSetName, refmapName.get())
-                    }
+                if (sourceSetName.get() == SourceSet.MAIN_SOURCE_SET_NAME) {
+                    defaultRefmapName = refmapName
+                } else {
+                    add(sourceSetName.get(), refmapName.get())
                 }
             }
         }

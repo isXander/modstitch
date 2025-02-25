@@ -10,6 +10,8 @@ import net.neoforged.moddevgradle.legacyforge.tasks.RemapJar
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.PublishArtifact
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
@@ -36,11 +38,10 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
             val jarJar = target.tasks.named("jarJar")
             from(jarJar)
             dependsOn(jarJar)
+        }.also {
+           addToArtifacts(target, it)
         }
         target.tasks["assemble"].dependsOn(jijJar)
-        target.artifacts {
-            add("archives", jijJar)
-        }
 
         shadowTask {
             archiveClassifier = "dev-fat"
@@ -63,13 +64,42 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
                     val reobfJar = reobfuscate(
                         jijJar,
                         target.extensions.getByType<SourceSetContainer>()["main"]
-                    )
-                    target.modstitch._finalJarTaskName = reobfJar.name
-                    target.artifacts {
-                        add("archives", reobfJar)
+                    ).also {
+                        addToArtifacts(target, it)
                     }
+
+                    reobfJar {
+                        archiveClassifier = ""
+                    }
+
+                    target.modstitch._finalJarTaskName = reobfJar.name
                 }
             }
+        }
+
+        target.afterEvaluate {
+            // Removes the original jar from the configurations so it doesn't get published.
+            for (configurationName in arrayOf<String>(
+                JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME,
+                JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME
+            )) {
+                val configuration: Configuration = configurations.getByName(configurationName)
+                val jarTask = tasks.getByName(JavaPlugin.JAR_TASK_NAME) as Jar
+                configuration.artifacts.removeIf { artifact: PublishArtifact? ->
+                    (artifact!!.file.absolutePath == jarTask.archiveFile.get().asFile.absolutePath
+                            && artifact.buildDependencies.getDependencies(null).contains(jarTask))
+                        .also { if (it) println("Removed ${artifact.name} from $configurationName") }
+                }
+            }
+        }
+    }
+
+    private fun addToArtifacts(target: Project, task: TaskProvider<out Jar>) {
+        target.artifacts.add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task)
+        target.artifacts.add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task)
+
+        target.artifacts {
+            add("archives", task)
         }
     }
 }

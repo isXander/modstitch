@@ -71,6 +71,10 @@ msShadow {
     relocatePackage = "dev.isxander.test.libs"
 }
 
+java {
+    withSourcesJar()
+}
+
 msPublishing {
     maven {
         repositories {

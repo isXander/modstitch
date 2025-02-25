@@ -50,10 +50,6 @@ abstract class ShadowCommonImpl<T : Any> : PlatformPlugin<T>() {
             configurations = listOf(shadeConfiguration.get())
             archiveClassifier = ""
         }
-
-        target.artifacts {
-            add("archives", shadowTask)
-        }
     }
 }
 
