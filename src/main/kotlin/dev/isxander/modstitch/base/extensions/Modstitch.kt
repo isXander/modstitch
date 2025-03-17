@@ -113,6 +113,8 @@ interface ModstitchExtension {
      */
     val finalJarTask: TaskProvider<out Jar>
 
+    val namedJarTask: TaskProvider<out Jar>
+
     /**
      * Configures the Loom extension.
      * The action is only executed if the active platform is Loom.
@@ -187,6 +189,13 @@ open class ModstitchExtensionImpl @Inject constructor(
         }
     override val finalJarTask: TaskProvider<out Jar>
         get() = _finalJarTaskName?.let { project.tasks.named<Jar>(it) } ?: error("Final jar task not set")
+    internal var _namedJarTaskName: String? = null
+        set(value) {
+            field = value
+            println("Named jar task set to $value")
+        }
+    override val namedJarTask: TaskProvider<out Jar>
+        get() = _namedJarTaskName?.let { project.tasks.named<Jar>(it) } ?: error("Named jar task not set")
 
     override val templatesSourceDirectorySet: SourceDirectorySet
         get() = project.extensions.getByType<SourceSetContainer>()["main"].extensions.getByName<SourceDirectorySet>("templates")

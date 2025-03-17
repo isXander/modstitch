@@ -81,6 +81,7 @@ class BaseModdevgradleImpl(
             MDGType.Regular -> "jar"
             MDGType.Legacy -> "reobfJar"
         }
+        target.modstitch._namedJarTaskName = "jar"
     }
 
     fun enable(target: Project, configuration: MDGEnableConfiguration) {
@@ -216,8 +217,8 @@ class BaseModdevgradleImpl(
         }
         mixin.registerSourceSet(mainSourceSet, "${target.modstitch.metadata.modId.get()}.refmap.json")
 
-        target.tasks.named<Jar>("jar") {
-            doFirst {
+        target.afterEvaluate {
+            modstitch.namedJarTask {
                 manifest.attributes["MixinConfigs"] = mixin.configs.joinToString(",") { it.config.get() }
             }
         }
