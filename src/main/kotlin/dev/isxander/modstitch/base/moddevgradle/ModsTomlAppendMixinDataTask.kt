@@ -11,11 +11,7 @@ abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
 
         val config = TomlFormat.instance().createParser().parse(contents)
 
-        if (!config.contains("mixins")) {
-            config.add("mixins", mutableListOf<Config>())
-        }
-
-        val mixins = config.get("mixins") as MutableList<Config>
+        val mixins = mutableListOf<Config>()
 
         mixinConfigs.get().forEach {
             if (it.side != Side.Both) {
@@ -26,6 +22,8 @@ abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
                 set("config", it.config)
             }.let { mixins.add(it) }
         }
+
+        config.set<MutableList<Config>>("mixins", mixins)
 
         return TomlFormat.instance().createWriter().writeToString(config)
     }
