@@ -14,6 +14,8 @@ open class ModstitchExtensionPlugin(
     private val platforms: ExtensionPlatforms
 ) : Plugin<Project> {
     override fun apply(target: Project) {
+        if (target.name == "gradle-kotlin-dsl-accessors") return
+
         val platformStr = getPlatformStrFromProperty(target)
 
         if (platformStr == "parent") {
