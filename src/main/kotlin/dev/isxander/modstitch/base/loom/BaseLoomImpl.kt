@@ -59,6 +59,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         target.modstitch._modLoaderManifest = Platform.Loom.modManifest
 
         target.modstitch._finalJarTaskName = "remapJar"
+        target.modstitch._namedJarTaskName = "jar"
 
         target.loom.mixin {
             target.modstitch.mixin.mixinSourceSets.whenObjectAdded {

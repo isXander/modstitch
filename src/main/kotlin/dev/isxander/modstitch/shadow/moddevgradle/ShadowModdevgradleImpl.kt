@@ -48,6 +48,7 @@ class ShadowModdevgradleImpl(private val type: MDGType) : ShadowCommonImpl<Nothi
             devlib()
         }
 
+        target.modstitch._namedJarTaskName = "jijJar"
         when (type) {
             MDGType.Regular -> {
                 target.modstitch._finalJarTaskName = "jijJar"
