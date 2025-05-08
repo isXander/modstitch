@@ -11,11 +11,21 @@ abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
 
         val config = TomlFormat.instance().createParser().parse(contents)
 
-        val mixins = mutableListOf<Config>()
+        val mixins = config.getOptional<MutableList<Config>>("mixins").orElseGet {
+            val newList = mutableListOf<Config>()
+            config.set<MutableList<Config>>("mixins", newList)
+            newList
+        }
+        val existingMixins = mixins.map { it.get<String>("config") }.toSet()
 
         mixinConfigs.get().forEach {
             if (it.side != Side.Both) {
                 logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${it.config}")
+            }
+
+            // ensure idempotentness
+            if (existingMixins.contains(it.config)) {
+                return@forEach
             }
 
             Config.inMemory().apply {
