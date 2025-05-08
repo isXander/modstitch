@@ -16,7 +16,7 @@ abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
             config.set<MutableList<Config>>("mixins", newList)
             newList
         }
-        val existingMixins = mixins.map { it.get<String>("config") }.toSet()
+        val existingConfigs = mixins.map { it.get<String>("config") }.toSet()
 
         mixinConfigs.get().forEach {
             if (it.side != Side.Both) {
@@ -24,7 +24,7 @@ abstract class ModsTomlAppendMixinDataTask : AppendMixinDataTask() {
             }
 
             // ensure idempotentness
-            if (existingMixins.contains(it.config)) {
+            if (existingConfigs.contains(it.config)) {
                 return@forEach
             }
 
