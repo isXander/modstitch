@@ -13,12 +13,15 @@ abstract class FMJAppendMixinDataTask : AppendMixinDataTask() {
         val gson = GsonBuilder().setPrettyPrinting().create()
 
         val json = gson.fromJson(contents, JsonObject::class.java)
-        // NEVER read the mixins from the json object, you will duplicate them with cached files
-        // this comes at the cost of requiring NO mixin configs from being static in the json file
-        val mixins = JsonArray().also { json.add("mixins", it) }
+        val mixins = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }
+        val existingConfigs = mixins.map { it.asJsonObject.get("config").asString }.toSet()
 
         mixinConfigs.get().forEach {
             val obj = JsonObject()
+            // ensure idempotentness
+            if (existingConfigs.contains(it.config)) {
+                return@forEach
+            }
             obj.addProperty("config", it.config)
             obj.addProperty("environment", when (it.side) {
                 Side.Both -> "*"
