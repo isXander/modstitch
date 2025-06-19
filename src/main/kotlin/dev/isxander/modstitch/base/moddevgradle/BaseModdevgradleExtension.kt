@@ -59,9 +59,12 @@ interface BaseModDevGradleExtension {
 
     /**
      * Creates two run configurations: one for the client and one for the server.
-     * [namingConvention] is a function that takes a string (the side, Client or Server) and returns the IDE name of the run config.
+     *
+     * [namingConvention] is a function that takes two strings:
+     * the platform name ("Forge", "NeoForge", or "Minecraft") and the side ("Client" or "Server"),
+     * and returns the IDE name of the run configuration (e.g., "NeoForge Client", "Forge Server").
      */
-    fun defaultRuns(client: Boolean = true, server: Boolean = true, namingConvention: (String) -> String = { "NeoForge $it" })
+    fun defaultRuns(client: Boolean = true, server: Boolean = true, namingConvention: (String, String) -> String = { name, side -> "$name $side" })
 }
 
 open class BaseModDevGradleExtensionImpl @Inject constructor(
@@ -83,8 +86,13 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
     override fun configureObfuscation(action: Action<ObfuscationExtension>) =
         if (type != MDGType.Legacy) super.configureObfuscation(action) else {}
 
-    override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String) -> String) {
+    override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String, String) -> String) {
         val project = project
+        val name = when {
+            !enableConfiguration.neoForgeVersion.isNullOrEmpty() -> "NeoForge"
+            !enableConfiguration.forgeVersion.isNullOrEmpty() -> "Forge"
+            else -> "Minecraft"
+        }
         configureNeoforge {
             runs {
                 fun registerOrConfigure(name: String, action: Action<RunModel>) = action(maybeCreate(name))
@@ -92,13 +100,13 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
                 if (client) {
                     registerOrConfigure("client") {
                         client()
-                        ideName = "${namingConvention("Client")} (${project.path})"
+                        ideName = "${namingConvention(name, "Client")} (${project.path})"
                     }
                 }
                 if (server) {
                     registerOrConfigure("server") {
                         server()
-                        ideName = "${namingConvention("Server")} (${project.path})"
+                        ideName = "${namingConvention(name, "Server")} (${project.path})"
                     }
                 }
             }
@@ -113,7 +121,7 @@ open class BaseModDevGradleExtensionDummy : BaseModDevGradleExtension {
     override val mixinExtension: MixinExtension by NotExistsDelegate()
     override val obfuscationExtension: ObfuscationExtension by NotExistsDelegate()
 
-    override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String) -> String) {}
+    override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String, String) -> String) {}
 }
 
 sealed interface MDGEnableConfiguration {
