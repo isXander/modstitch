@@ -21,6 +21,15 @@ import javax.inject.Inject
 
 interface ModstitchExtension {
     /**
+     * The mod loader version to target.
+     *
+     * - When target platform is `loom`, this property is equivalent to [fabricLoaderVersion].
+     * - When target platform is `moddevgradle`, this property is equivalent to [neoForgeVersion].
+     * - When target platform is `moddevgradle-legacy`, this property is equivalent to [forgeVersion].
+     */
+    var modLoaderVersion: String?
+
+    /**
      * The version of Fabric Loader to use.
      *
      * Setting this property is loosely equivalent to:
@@ -211,6 +220,18 @@ open class ModstitchExtensionImpl @Inject constructor(
     @Transient private val plugin: BaseCommonImpl<*>,
 ) : ModstitchExtension {
     // General setup for the mod environment.
+    override var modLoaderVersion: String?
+        get() = when (plugin.platform) {
+            Platform.Loom -> fabricLoaderVersion
+            Platform.MDG -> neoForgeVersion
+            Platform.MDGLegacy -> forgeVersion
+        }
+        set(value) = when (plugin.platform) {
+            Platform.Loom -> fabricLoaderVersion = value
+            Platform.MDG -> neoForgeVersion = value
+            Platform.MDGLegacy -> forgeVersion = value
+        }
+
     override var fabricLoaderVersion: String?
         get() = platformExtension<BaseLoomExtension, String> { it.fabricLoaderVersion.orNull }
         set(value) = if (value != null) platformExtension<BaseLoomExtension> { fabricLoaderVersion = value } else {}
