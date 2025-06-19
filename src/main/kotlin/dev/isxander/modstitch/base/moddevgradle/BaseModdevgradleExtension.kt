@@ -48,7 +48,7 @@ interface BaseModDevGradleExtension {
 
     /**
      * The underlying platform-specific extension: `mixin`
-     * Accessing this property will throw an exception if the current platform is ModDevGradle Legacy.
+     * Accessing this property will throw an exception if the current platform is not ModDevGradle Legacy.
      */
     val mixinExtension: MixinExtension
     /**
@@ -81,7 +81,7 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
         if (type == MDGType.Legacy) super.configureMixin(action) else {}
     override val obfuscationExtension: ObfuscationExtension by ExtensionGetter(project)
     override fun configureObfuscation(action: Action<ObfuscationExtension>) =
-        if (type != MDGType.Legacy) super.configureObfuscation(action) else {}
+        if (type == MDGType.Legacy) super.configureObfuscation(action) else {}
 
     override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String) -> String) {
         val project = project
