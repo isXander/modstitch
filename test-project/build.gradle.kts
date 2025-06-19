@@ -1,11 +1,12 @@
-fun prop(name: String, consumer: (prop: String) -> Unit) {
-    (findProperty(name) as? String?)
-        ?.let(consumer)
-}
-
 modstitch {
-    minecraftVersion = findProperty("minecraftVersion") as String
+    fabricLoaderVersion = findProperty("fabricLoaderVersion") as String?
+    neoForgeVersion = findProperty("neoForgeVersion") as String?
+    forgeVersion = findProperty("forgeVersion") as String?
+    mcpVersion = findProperty("mcpVersion") as String?
+    neoFormVersion = findProperty("neoFormVersion") as String?
+    minecraftVersion = findProperty("minecraftVersion") as String?
     javaTarget = 17
+    println(modLoaderManifest)
 
     metadata {
         modId = "test_project"
@@ -16,19 +17,7 @@ modstitch {
         modDescription = "A test project for ModStitch"
     }
 
-    loom {
-        fabricLoaderVersion = "0.16.10"
-    }
-
     moddevgradle {
-        enable {
-            prop("neoForgeVersion") { neoForgeVersion = it }
-            prop("forgeVersion") { forgeVersion = it }
-            prop("mcpVersion") { mcpVersion = it }
-            prop("neoFormVersion") { neoFormVersion = it }
-        }
-        println(modLoaderManifest)
-
         defaultRuns()
     }
 
