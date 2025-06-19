@@ -67,8 +67,8 @@ interface BaseModDevGradleExtension {
 open class BaseModDevGradleExtensionImpl @Inject constructor(
     objects: ObjectFactory,
     @Transient private val project: Project,
-    private val enableConfiguration: MDGEnableConfigurationInternal,
-    private val type: MDGType,
+    val enableConfiguration: MDGEnableConfigurationInternal,
+    val type: MDGType,
 ) : BaseModDevGradleExtension {
     override fun enable(action: Action<MDGEnableConfiguration>) {
         action.execute(enableConfiguration)
