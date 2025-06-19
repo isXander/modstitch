@@ -142,13 +142,14 @@ class RegularEnableConfiguration(impl: BaseModdevgradleImpl, private val extensi
     }
 }
 class LegacyEnableConfiguration(impl: BaseModdevgradleImpl, private val extension: LegacyForgeExtension) : MDGEnableConfigurationInternal(impl) {
-    override var neoForgeVersion: String? by NotExistsNullableDelegate()
+    override var neoForgeVersion: String? = null
     override var neoFormVersion: String? by NotExistsNullableDelegate()
     override var forgeVersion: String? = null
     override var mcpVersion: String? = null
 
     override fun enable(target: Project) {
         extension.enable {
+            neoForgeVersion = this@LegacyEnableConfiguration.neoForgeVersion
             forgeVersion = this@LegacyEnableConfiguration.forgeVersion
             mcpVersion = this@LegacyEnableConfiguration.mcpVersion
         }
