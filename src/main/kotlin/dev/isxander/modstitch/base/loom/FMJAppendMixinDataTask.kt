@@ -14,7 +14,11 @@ abstract class FMJAppendMixinDataTask : AppendMixinDataTask() {
 
         val json = gson.fromJson(contents, JsonObject::class.java)
         val mixins = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }
-        val existingConfigs = mixins.map { it.asJsonObject.get("config").asString }.toSet()
+        val existingConfigs = mixins.map { when {
+            it.isJsonObject -> it.asJsonObject.get("config").asString
+            it.isJsonPrimitive && it.asJsonPrimitive.isString -> it.asString
+            else -> ""
+        }}
 
         mixinConfigs.get().forEach {
             val obj = JsonObject()
