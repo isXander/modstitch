@@ -24,7 +24,7 @@ class BaseModdevgradleImpl(
     private val type: MDGType
 ) : BaseCommonImpl<BaseModDevGradleExtension>(
     type.platform,
-    ModsTomlAppendMixinDataTask::class.java,
+    AppendNeoForgeMetadataTask::class.java,
 ) {
     private lateinit var remapConfiguration: Configuration
 

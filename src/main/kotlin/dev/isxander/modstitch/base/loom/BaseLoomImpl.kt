@@ -16,7 +16,7 @@ import org.gradle.language.jvm.tasks.ProcessResources
 
 class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
     Platform.Loom,
-    FMJAppendMixinDataTask::class.java,
+    AppendFabricMetadataTask::class.java,
 ) {
     override val platformExtensionInfo = PlatformExtensionInfo(
         "msLoom",
