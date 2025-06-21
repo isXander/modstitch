@@ -1,14 +1,10 @@
 package dev.isxander.modstitch.base.moddevgradle
 
-import com.electronwill.nightconfig.core.Config
-import com.electronwill.nightconfig.toml.TomlFormat
 import dev.isxander.modstitch.base.BaseCommonImpl
 import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
-import dev.isxander.modstitch.base.extensions.MixinSettingsSerializer
 import dev.isxander.modstitch.base.extensions.modstitch
-import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.Platform
-import dev.isxander.modstitch.util.Side
+import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.addCamelCasePrefix
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.LegacyForgeExtension
@@ -19,9 +15,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
-import org.gradle.kotlin.dsl.assign
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.semver4j.Semver
 import org.slf4j.event.Level
@@ -222,19 +216,6 @@ class BaseModdevgradleImpl(
                 manifest.attributes["MixinConfigs"] = mixin.configs.joinToString(",") { it.config.get() }
             }
         }
-    }
-
-    private fun getMixinSerializer(): MixinSettingsSerializer = { configs, logger ->
-        val toml = Config.inMemory()
-        toml.add("mixins", configs.map {
-            if (it.side.getOrElse(Side.Both) != Side.Both) {
-                logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${it.name}")
-            }
-
-            Config.inMemory().apply { set("config", it.config.get()) }
-        })
-
-        TomlFormat.instance().createWriter().writeToString(toml).trim()
     }
 
     private val Project.platformExt: BaseModDevGradleExtension

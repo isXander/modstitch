@@ -1,18 +1,9 @@
 package dev.isxander.modstitch.base.loom
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dev.isxander.modstitch.base.BaseCommonImpl
 import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
-import dev.isxander.modstitch.base.extensions.MixinSettingsSerializer
 import dev.isxander.modstitch.base.extensions.modstitch
-import dev.isxander.modstitch.util.Platform
-import dev.isxander.modstitch.util.PlatformExtensionInfo
-import dev.isxander.modstitch.util.Side
-import dev.isxander.modstitch.util.addCamelCasePrefix
-import dev.isxander.modstitch.util.zip
+import dev.isxander.modstitch.util.*
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.util.Constants
 import org.gradle.api.Project
