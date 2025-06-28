@@ -3,6 +3,7 @@ package dev.isxander.modstitch.base
 import dev.isxander.modstitch.*
 import dev.isxander.modstitch.base.extensions.*
 import dev.isxander.modstitch.util.Platform
+import dev.isxander.modstitch.util.afterSuccessfulEvaluate
 import dev.isxander.modstitch.util.mainSourceSet
 import dev.isxander.modstitch.util.platform
 import dev.isxander.modstitch.util.printVersion
@@ -29,6 +30,9 @@ abstract class BaseCommonImpl<T : Any>(
     override fun apply(target: Project) {
         printVersion("Common", target)
 
+        // Set properties that don't support lazy evaluation.
+        target.afterSuccessfulEvaluate(this::finalize)
+
         // Set the property for use elsewhere
         target.platform = platform
 
@@ -48,13 +52,6 @@ abstract class BaseCommonImpl<T : Any>(
             target.extensions.configure<BasePluginExtension> {
                 archivesName.set(msExt.metadata.modId)
             }
-        }
-
-        // Project version and group does not support lazy configuration.
-        // Must do in an afterEvaluate block
-        target.afterEvaluate {
-            target.group = msExt.metadata.modGroup.get()
-            target.version = msExt.metadata.modVersion.get()
         }
 
         // IDEA no longer automatically downloads sources and javadocs.
@@ -95,6 +92,16 @@ abstract class BaseCommonImpl<T : Any>(
             mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } })
             accessWideners.value(msExt.accessWidenerName.zip(msExt.accessWidener) { n, _ -> listOf(n) }.orElse(listOf()))
         }.also { target.tasks["processResources"].finalizedBy(it) }
+    }
+
+    /**
+     * Finalizes pending configuration actions after the project has been successfully evaluated.
+     *
+     * @param target The target project.
+     */
+    protected open fun finalize(target: Project) {
+        target.group = target.modstitch.metadata.modGroup.get()
+        target.version = target.modstitch.metadata.modVersion.get()
     }
 
     /**
