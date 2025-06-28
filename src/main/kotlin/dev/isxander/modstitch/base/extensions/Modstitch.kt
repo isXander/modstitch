@@ -8,6 +8,7 @@ import dev.isxander.modstitch.util.*
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
@@ -132,6 +133,38 @@ interface ModstitchExtension {
      */
     val mixin: MixinBlock
     fun mixin(action: Action<MixinBlock>) = action.execute(mixin)
+
+    /**
+     * The access widener to be applied to the Minecraft source code.
+     *
+     * By default, Modstitch looks for the following files (case-insensitive) in the specified order:
+     * - `modstitch.accessWidener`
+     * - `.accessWidener`
+     * - `accesstransformer.cfg`
+     *
+     * Files located in the root of the current project take precedence over
+     * those in the root of the root project, if one is present.
+     */
+    val accessWidener: RegularFileProperty
+
+    /**
+     * The path, relative to the root of resulting JAR's resources, where [accessWidener] will be copied.
+     *
+     * - On Loom, this defaults to `${metadata.modId}.accessWidener`.
+     * - On ModDevGradle, this defaults to `META-INF/accesstransformer.cfg`.
+     *
+     * In most cases you don't need to change this value.
+     */
+    val accessWidenerName: Property<String>
+
+    /**
+     * Indicates whether [accessWidener] should be validated.
+     * Validation fails with a fatal error if any of the targeted members do not exist.
+     * If the [accessWidener] is syntactically invalid, the build will fail regardless of the set value.
+     *
+     * Defaults to `false`.
+     */
+    val validateAccessWidener: Property<Boolean>
 
     /**
      * The mod loader manifest to use.
@@ -261,6 +294,17 @@ open class ModstitchExtensionImpl @Inject constructor(
     override val metadata = objects.newInstance<MetadataBlockImpl>(objects)
 
     override val mixin = objects.newInstance<MixinBlockImpl>(objects)
+
+    override val accessWidener = objects.fileProperty().convention(project.layout.file(project.provider {
+        val fileNames = listOf("modstitch.accessWidener", ".accessWidener", "accesstransformer.cfg")
+        project.projectChain.flatMap { p -> fileNames.map { p.projectDir to it } }.firstNotNullOfOrNull {
+            it.first.listFiles().firstOrNull { f -> it.second.equals(f.name, ignoreCase = true) }?.absoluteFile
+        }
+    }))
+
+    override val accessWidenerName = objects.property<String>()
+
+    override val validateAccessWidener = objects.property<Boolean>().convention(false)
 
     var _modLoaderManifest: String? = null
     override val modLoaderManifest
