@@ -15,6 +15,10 @@ abstract class AppendModMetadataTask : SourceTask() {
     @get:Input
     abstract val mixins: ListProperty<FinalMixinConfigurationSettings>
 
+    /** A list of access widener file paths to be included in the metadata. */
+    @get:Input
+    abstract val accessWideners: ListProperty<String>
+
     /**
      * Appends metadata entries to the [source] file(s).
      */
