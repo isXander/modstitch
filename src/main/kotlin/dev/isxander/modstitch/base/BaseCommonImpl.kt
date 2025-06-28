@@ -93,6 +93,7 @@ abstract class BaseCommonImpl<T : Any>(
 
             source(target.mainSourceSet!!.output.resourcesDir!!.resolve(msExt.modLoaderManifest))
             mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } })
+            accessWideners.value(msExt.accessWidenerName.zip(msExt.accessWidener) { n, _ -> listOf(n) }.orElse(listOf()))
         }.also { target.tasks["processResources"].finalizedBy(it) }
     }
 
