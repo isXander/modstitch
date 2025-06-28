@@ -12,10 +12,6 @@ import java.io.File
  */
 abstract class AppendFabricMetadataTask : AppendModMetadataTask() {
     override fun appendModMetadata(file: File) {
-        if (file.extension != "json") {
-            error("Invalid file extension: ${file.extension}")
-        }
-
         val gson = GsonBuilder().setPrettyPrinting().create()
         val json = file.reader().use { gson.fromJson(it, JsonObject::class.java) }
 

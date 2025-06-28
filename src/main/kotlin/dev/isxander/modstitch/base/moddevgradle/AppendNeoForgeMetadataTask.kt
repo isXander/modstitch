@@ -12,10 +12,6 @@ import java.io.File
  */
 abstract class AppendNeoForgeMetadataTask : AppendModMetadataTask() {
     override fun appendModMetadata(file: File) {
-        if (file.extension != "toml") {
-            error("Invalid file extension: ${file.extension}")
-        }
-
         val config = TomlFormat.instance().createParser().parse(file, FileNotFoundAction.THROW_ERROR)
         appendNewEntries(config, "mixins", "config", mixins.get().map { it.config })
         appendNewEntries(config, "accessTransformers", "file", accessWideners.get())
