@@ -1,0 +1,8 @@
+accessWidener v1 named
+
+accessible field com/mojang/blaze3d/platform/Window windowedX I
+accessible field com/mojang/blaze3d/platform/Window windowedY I
+accessible field com/mojang/blaze3d/platform/Window windowedWidth I
+accessible field com/mojang/blaze3d/platform/Window windowedHeight I
+accessible field com/mojang/blaze3d/platform/Window __nop__ Z
+accessible method com/mojang/blaze3d/platform/Window refreshFramebufferSize ()V
