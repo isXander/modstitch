@@ -102,7 +102,16 @@ abstract class BaseCommonImpl<T : Any>(
     protected open fun finalize(target: Project) {
         target.group = target.modstitch.metadata.modGroup.get()
         target.version = target.modstitch.metadata.modVersion.get()
+
+        applyAccessWidener(target)
     }
+
+    /**
+     * Applies the access widener configuration to the specified [target] project.
+     *
+     * @param target The target project.
+     */
+    protected abstract fun applyAccessWidener(target: Project)
 
     /**
      * Add all repositories necessary for the platform in here.
