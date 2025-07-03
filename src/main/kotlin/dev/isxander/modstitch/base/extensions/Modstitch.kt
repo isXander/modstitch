@@ -11,12 +11,12 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
-import java.util.*
 import javax.inject.Inject
 
 interface ModstitchExtension {
@@ -215,6 +215,7 @@ interface ModstitchExtension {
 
 @Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
 open class ModstitchExtensionImpl @Inject constructor(
+    providers: ProviderFactory,
     objects: ObjectFactory,
     @Transient private val project: Project,
     @Transient private val plugin: BaseCommonImpl<*>,
@@ -231,6 +232,17 @@ open class ModstitchExtensionImpl @Inject constructor(
             Platform.MDG -> neoForgeVersion = value
             Platform.MDGLegacy -> forgeVersion = value
         }
+
+    init {
+        platformExtension<BaseLoomExtension> {
+            fabricLoaderVersion
+                .propConvention(providers.prop("fabricLoaderVersion"))
+                .propConvention(providers.prop("modLoaderVersion"))
+        }
+        platformExtension<BaseModDevGradleExtensionImpl> {
+            // FIXME: MDG doesn't use lazy properties here so we can't apply conventions
+        }
+    }
 
     override var fabricLoaderVersion: String?
         get() = platformExtension<BaseLoomExtension, String> { it.fabricLoaderVersion.orNull }
@@ -253,7 +265,9 @@ open class ModstitchExtensionImpl @Inject constructor(
         set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { mcpVersion = value } } else {}
 
     override val minecraftVersion = objects.property<String>()
+        .propConvention(providers.prop("minecraftVersion"))
     override val javaTarget = objects.property<Int>()
+        .propConvention(providers.prop("javaTarget")) { it.toInt() }
 
     override val parchment = objects.newInstance<ParchmentBlockImpl>(objects)
     init { parchment.minecraftVersion.convention(minecraftVersion) }
@@ -318,6 +332,8 @@ open class ModstitchExtensionImpl @Inject constructor(
     override fun onEnable(action: Action<Project>) {
         plugin.onEnable(project, action)
     }
+
+    private fun ProviderFactory.prop(suffix: String) = gradleProperty("modstitch.${suffix}")
 }
 
 operator fun ModstitchExtension.invoke(block: ModstitchExtension.() -> Unit) = block()

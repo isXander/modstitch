@@ -1,6 +1,7 @@
 package dev.isxander.modstitch.base.extensions
 
 import dev.isxander.modstitch.util.Side
+import dev.isxander.modstitch.util.propConvention
 import org.gradle.api.Action
 import org.gradle.api.DomainObjectSet
 import org.gradle.api.Named
@@ -9,6 +10,7 @@ import org.gradle.api.logging.Logger
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.kotlin.dsl.*
 import org.jetbrains.annotations.ApiStatus
@@ -48,9 +50,11 @@ interface MixinBlock {
     @get:ApiStatus.Internal
     val mixinSourceSets: DomainObjectSet<MixinSourceSet>
 }
-open class MixinBlockImpl @Inject constructor(private val objects: ObjectFactory) : MixinBlock {
+open class MixinBlockImpl @Inject constructor(providers: ProviderFactory, private val objects: ObjectFactory) : MixinBlock {
     override val configs = objects.domainObjectContainer(MixinConfigurationSettings::class)
-    override val addMixinsToModManifest = objects.property<Boolean>().convention(false)
+    override val addMixinsToModManifest = objects.property<Boolean>()
+        .propConvention(providers.prop("addMixinsToModManifest")) { it.toBoolean() }
+        .convention(false)
     override val mixinSourceSets = objects.domainObjectSet(MixinSourceSet::class)
     override fun registerSourceSet(sourceSet: SourceSet, refmapName: Provider<String>) {
         objects.newInstance<MixinSourceSet>().apply {
@@ -64,6 +68,8 @@ open class MixinBlockImpl @Inject constructor(private val objects: ObjectFactory
             this.refmapName.set(refmapName)
         }.also { mixinSourceSets.add(it) }
     }
+
+    private fun ProviderFactory.prop(suffix: String) = gradleProperty("modstitch.mixin.${suffix}")
 }
 
 typealias MixinSettingsSerializer = (configs: List<MixinConfigurationSettings>, logger: Logger) -> String

@@ -1,7 +1,9 @@
 package dev.isxander.modstitch.base.extensions
 
+import dev.isxander.modstitch.util.propConvention
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.kotlin.dsl.property
 import javax.inject.Inject
 
@@ -31,9 +33,17 @@ interface ParchmentBlock {
     val enabled: Property<Boolean>
 }
 @Suppress("LeakingThis") // Extension must remain open for Gradle to inject the implementation. This is safe.
-open class ParchmentBlockImpl @Inject constructor(objects: ObjectFactory) : ParchmentBlock {
+open class ParchmentBlockImpl @Inject constructor(providers: ProviderFactory, objects: ObjectFactory) : ParchmentBlock {
     override val minecraftVersion = objects.property<String>()
+        .propConvention(providers.prop("minecraftVersion"))
     override val mappingsVersion = objects.property<String>()
-    override val parchmentArtifact = objects.property<String>().convention(minecraftVersion.zip(mappingsVersion) { mc, mappings -> "org.parchmentmc.data:parchment-$mc:$mappings@zip" })
-    override val enabled = objects.property<Boolean>().convention(parchmentArtifact.map { it.isNotEmpty() }.orElse(false))
+        .propConvention(providers.prop("mappingsVersion"))
+    override val parchmentArtifact = objects.property<String>()
+        .propConvention(providers.prop("parchmentArtifact"))
+        .convention(minecraftVersion.zip(mappingsVersion) { mc, mappings -> "org.parchmentmc.data:parchment-$mc:$mappings@zip" })
+    override val enabled = objects.property<Boolean>()
+        .propConvention(providers.prop("enabled")) { it.toBoolean() }
+        .convention(parchmentArtifact.map { it.isNotEmpty() }.orElse(false))
+
+    private fun ProviderFactory.prop(suffix: String) = gradleProperty("modstitch.parchment.${suffix}")
 }

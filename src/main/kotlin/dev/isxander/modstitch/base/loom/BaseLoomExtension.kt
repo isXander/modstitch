@@ -8,11 +8,13 @@ import dev.isxander.modstitch.PlatformExtension
 import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
+import dev.isxander.modstitch.util.propConvention
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.kotlin.dsl.*
 import javax.inject.Inject
 
@@ -35,10 +37,12 @@ interface BaseLoomExtension : PlatformExtension<BaseLoomExtension> {
 }
 
 open class BaseLoomExtensionImpl @Inject constructor(
+    providers: ProviderFactory,
     objects: ObjectFactory,
     @Transient private val project: Project
 ) : BaseLoomExtension {
     override val fabricLoaderVersion: Property<String> = objects.property<String>()
+        .propConvention(providers.prop("fabricLoaderVersion"))
 
     override val loomExtension: LoomGradleExtensionAPI by ExtensionGetter(project)
     override fun configureLoom(action: Action<LoomGradleExtensionAPI>) =
@@ -46,6 +50,8 @@ open class BaseLoomExtensionImpl @Inject constructor(
 
     override fun applyIfCurrent(configure: Action<BaseLoomExtension>) =
         configure.execute(this)
+
+    private fun ProviderFactory.prop(suffix: String) = gradleProperty("modstitch.loom.${suffix}")
 }
 
 open class BaseLoomExtensionDummy : BaseLoomExtension {

@@ -1,8 +1,10 @@
 package dev.isxander.modstitch.base.extensions
 
+import dev.isxander.modstitch.util.propConvention
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.kotlin.dsl.mapProperty
 import org.gradle.kotlin.dsl.property
 import javax.inject.Inject
@@ -68,15 +70,34 @@ interface MetadataBlock {
      */
     val replacementProperties: MapProperty<String, String>
 }
-open class MetadataBlockImpl @Inject constructor(objects: ObjectFactory) : MetadataBlock {
+open class MetadataBlockImpl @Inject constructor(providers: ProviderFactory, objects: ObjectFactory) : MetadataBlock {
     /** Mods should use a `lower_snake_case` mod-id to obey the conventions of both mod loaders. */
-    override val modId = objects.property<String>().convention("unnamed_mod")
-    override val modName = objects.property<String>().convention("Unnamed Mod")
-    override val modVersion = objects.property<String>().convention("1.0.0")
-    override val modDescription = objects.property<String>().convention("")
-    override val modLicense = objects.property<String>().convention("All Rights Reserved")
-    override val modGroup = objects.property<String>().convention("com.example")
-    override val modAuthor = objects.property<String>().convention("")
-    override val modCredits = objects.property<String>().convention("")
-    override val replacementProperties = objects.mapProperty<String, String>().convention(emptyMap())
+    override val modId = objects.property<String>()
+        .propConvention(providers.prop("modId"))
+        .convention("unnamed_mod")
+    override val modName = objects.property<String>()
+        .propConvention(providers.prop("modName"))
+        .convention("Unnamed Mod")
+    override val modVersion = objects.property<String>()
+        .propConvention(providers.prop("modVersion"))
+        .convention("1.0.0")
+    override val modDescription = objects.property<String>()
+        .propConvention(providers.prop("modDescription"))
+        .convention("")
+    override val modLicense = objects.property<String>()
+        .propConvention(providers.prop("modLicense"))
+        .convention("All Rights Reserved")
+    override val modGroup = objects.property<String>()
+        .propConvention(providers.prop("modGroup"))
+        .convention("com.example")
+    override val modAuthor = objects.property<String>()
+        .propConvention(providers.prop("modAuthor"))
+        .convention("")
+    override val modCredits = objects.property<String>()
+        .propConvention(providers.prop("modCredits"))
+        .convention("")
+    override val replacementProperties = objects.mapProperty<String, String>()
+        .convention(emptyMap())
+
+    private fun ProviderFactory.prop(suffix: String) = gradleProperty("modstitch.metadata.${suffix}")
 }
