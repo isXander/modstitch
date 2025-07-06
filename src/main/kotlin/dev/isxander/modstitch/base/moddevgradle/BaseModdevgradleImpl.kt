@@ -1,36 +1,35 @@
 package dev.isxander.modstitch.base.moddevgradle
 
-import com.electronwill.nightconfig.core.Config
-import com.electronwill.nightconfig.toml.TomlFormat
 import dev.isxander.modstitch.base.BaseCommonImpl
 import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
-import dev.isxander.modstitch.base.extensions.MixinSettingsSerializer
 import dev.isxander.modstitch.base.extensions.modstitch
-import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.Platform
-import dev.isxander.modstitch.util.Side
+import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.addCamelCasePrefix
+import net.neoforged.moddevgradle.dsl.ModDevExtension
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.LegacyForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.MixinExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.ObfuscationExtension
+import net.neoforged.nfrtgradle.CreateMinecraftArtifacts
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 import org.gradle.kotlin.dsl.assign
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.semver4j.Semver
 import org.slf4j.event.Level
+import kotlin.collections.dropLast
+import kotlin.collections.last
 
 class BaseModdevgradleImpl(
     private val type: MDGType
 ) : BaseCommonImpl<BaseModDevGradleExtension>(
     type.platform,
-    ModsTomlAppendMixinDataTask::class.java,
+    AppendNeoForgeMetadataTask::class.java,
 ) {
     private lateinit var remapConfiguration: Configuration
 
@@ -54,8 +53,6 @@ class BaseModdevgradleImpl(
                 parchmentArtifact = target.modstitch.parchment.parchmentArtifact
                 enabled = target.modstitch.parchment.enabled
             }
-
-            validateAccessTransformers = true
 
             runs {
                 configureEach {
@@ -82,6 +79,67 @@ class BaseModdevgradleImpl(
             MDGType.Legacy -> "reobfJar"
         }
         target.modstitch._namedJarTaskName = "jar"
+    }
+
+    override fun applyAccessWidener(target: Project) {
+        val modstitch = target.modstitch
+        val moddev = target.extensions.getByType<ModDevExtension>()
+        val obf = target.extensions.findByType<ObfuscationExtension>()
+        @Suppress("UnstableApiUsage") val namedToSrgMappings = obf?.namedToSrgMappings ?: target.provider { null }
+        @Suppress("UnstableApiUsage") val srgToNamedMappings = obf?.srgToNamedMappings ?: target.provider { null }
+
+        val defaultAccessTransformerName = "META-INF/accesstransformer.cfg"
+        val generatedAccessTransformer = target.layout.buildDirectory.file("modstitch/$defaultAccessTransformerName").zip(modstitch.accessWidener) { x, _ -> x }
+        val generatedAccessTransformers = generatedAccessTransformer.map { listOf(it) }.orElse(listOf())
+        val accessWidenerName = modstitch.accessWidenerName.convention(defaultAccessTransformerName).map { when {
+            type == MDGType.Regular || it == defaultAccessTransformerName -> it
+            else -> error("Forge does not support custom access transformer paths.")
+        }}
+        val accessWidenerPath = accessWidenerName.map { it.split('\\', '/') }
+
+        // Finalize our properties so that no further changes can be made to them after they've been read.
+        modstitch.accessWidener.finalizeValueOnRead()
+        modstitch.accessWidenerName.finalizeValueOnRead()
+        modstitch.validateAccessWidener.finalizeValueOnRead()
+
+        // Wire MDG to use our properties.
+        moddev.validateAccessTransformers = modstitch.validateAccessWidener
+        moddev.accessTransformers.from(generatedAccessTransformers)
+
+        val createMinecraftArtifacts = target.tasks.getByName<CreateMinecraftArtifacts>("createMinecraftArtifacts")
+        val createMinecraftMappings = target.tasks.register<CreateMinecraftMappingsTask>("createMinecraftMappings") {
+            group = "modstitch/internal"
+            description = "Creates Minecraft mappings by invoking NFRT."
+            project.configurations.filter { it.name.startsWith("neoFormRuntimeDependencies") }.forEach(this::addArtifactsToManifest)
+
+            enableCache.set(createMinecraftArtifacts.enableCache)
+            analyzeCacheMisses.set(createMinecraftArtifacts.analyzeCacheMisses)
+            toolsJavaExecutable.set(createMinecraftArtifacts.toolsJavaExecutable)
+            neoForgeArtifact.set(createMinecraftArtifacts.neoForgeArtifact)
+            neoFormArtifact.set(createMinecraftArtifacts.neoFormArtifact)
+            namedToIntermediaryMappings.set(namedToSrgMappings)
+            intermediaryToNamedMappings.set(srgToNamedMappings)
+        }
+
+        val generateAccessTransformer = target.tasks.register<GenerateAccessTransformerTask>("generateAccessTransformer") {
+            group = "modstitch/internal"
+            description = "Generates an access transformer."
+            dependsOn(createMinecraftMappings)
+
+            accessWidener.set(modstitch.accessWidener)
+            mappings.set(namedToSrgMappings)
+            accessTransformer.set(generatedAccessTransformer)
+        }
+
+        createMinecraftArtifacts.dependsOn(generateAccessTransformer)
+
+        target.tasks.named<ProcessResources>("processResources") {
+            dependsOn(generateAccessTransformer)
+            from(generatedAccessTransformers) {
+                rename { accessWidenerPath.get().last() }
+                into(accessWidenerPath.map { it.dropLast(1).joinToString("/") })
+            }
+        }
     }
 
     fun enable(target: Project, configuration: MDGEnableConfiguration) {
@@ -222,19 +280,6 @@ class BaseModdevgradleImpl(
                 manifest.attributes["MixinConfigs"] = mixin.configs.joinToString(",") { it.config.get() }
             }
         }
-    }
-
-    private fun getMixinSerializer(): MixinSettingsSerializer = { configs, logger ->
-        val toml = Config.inMemory()
-        toml.add("mixins", configs.map {
-            if (it.side.getOrElse(Side.Both) != Side.Both) {
-                logger.warn("Side-specific mixins are not supported in MDG. Ignoring side for ${it.name}")
-            }
-
-            Config.inMemory().apply { set("config", it.config.get()) }
-        })
-
-        TomlFormat.instance().createWriter().writeToString(toml).trim()
     }
 
     private val Project.platformExt: BaseModDevGradleExtension

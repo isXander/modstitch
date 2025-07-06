@@ -3,6 +3,8 @@ package dev.isxander.modstitch.base
 import dev.isxander.modstitch.*
 import dev.isxander.modstitch.base.extensions.*
 import dev.isxander.modstitch.util.Platform
+import dev.isxander.modstitch.util.afterSuccessfulEvaluate
+import dev.isxander.modstitch.util.mainSourceSet
 import dev.isxander.modstitch.util.platform
 import dev.isxander.modstitch.util.printVersion
 import org.gradle.api.Action
@@ -17,21 +19,19 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.*
-import org.gradle.kotlin.dsl.assign
-import org.gradle.kotlin.dsl.register
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.ide.idea.model.IdeaModel
-import java.io.File
-import kotlin.reflect.KClass
 
 abstract class BaseCommonImpl<T : Any>(
     val platform: Platform,
-    private val mixinMetadataTask: Class<out AppendMixinDataTask>,
+    private val appendModMetadataTask: Class<out AppendModMetadataTask>,
 ) : PlatformPlugin<T>() {
     override fun apply(target: Project) {
         printVersion("Common", target)
+
+        // Set properties that don't support lazy evaluation.
+        target.afterSuccessfulEvaluate(this::finalize)
 
         // Set the property for use elsewhere
         target.platform = platform
@@ -52,13 +52,6 @@ abstract class BaseCommonImpl<T : Any>(
             target.extensions.configure<BasePluginExtension> {
                 archivesName.set(msExt.metadata.modId)
             }
-        }
-
-        // Project version and group does not support lazy configuration.
-        // Must do in an afterEvaluate block
-        target.afterEvaluate {
-            target.group = msExt.metadata.modGroup.get()
-            target.version = msExt.metadata.modVersion.get()
         }
 
         // IDEA no longer automatically downloads sources and javadocs.
@@ -90,12 +83,35 @@ abstract class BaseCommonImpl<T : Any>(
             configureJiJConfiguration(target, this)
         }
 
-        target.tasks.register("applyMixinConfigToModMetadata", mixinMetadataTask) {
+        // Append custom mod metadata registered via Modstitch
+        target.tasks.register("appendModMetadata", appendModMetadataTask) {
             group = "modstitch/internal"
+            dependsOn("processResources")
 
-            AppendMixinDataTask.configureTask(this, target, target.sourceSets["main"], msExt.modLoaderManifest)
+            source(target.mainSourceSet!!.output.resourcesDir!!.resolve(msExt.modLoaderManifest))
+            mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } })
+            accessWideners.value(msExt.accessWidenerName.zip(msExt.accessWidener) { n, _ -> listOf(n) }.orElse(listOf()))
         }.also { target.tasks["processResources"].finalizedBy(it) }
     }
+
+    /**
+     * Finalizes pending configuration actions after the project has been successfully evaluated.
+     *
+     * @param target The target project.
+     */
+    protected open fun finalize(target: Project) {
+        target.group = target.modstitch.metadata.modGroup.get()
+        target.version = target.modstitch.metadata.modVersion.get()
+
+        applyAccessWidener(target)
+    }
+
+    /**
+     * Applies the access widener configuration to the specified [target] project.
+     *
+     * @param target The target project.
+     */
+    protected abstract fun applyAccessWidener(target: Project)
 
     /**
      * Add all repositories necessary for the platform in here.
