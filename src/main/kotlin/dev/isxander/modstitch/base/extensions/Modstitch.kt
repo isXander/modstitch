@@ -105,6 +105,12 @@ interface ModstitchExtension {
 
     /**
      * The Java version to target.
+     *
+     * - Defaults to `21` if [minecraftVersion] >= `1.20.5`.
+     * - Defaults to `17` if [minecraftVersion] >= `1.18`.
+     * - Defaults to `16` if [minecraftVersion] >= `1.17`.
+     * - Defaults to  `8` if [minecraftVersion] <= `1.16.5`.
+     * - Has no default value if [minecraftVersion] denotes a snapshot version.
      */
     val javaVersion: Property<Int>
 
@@ -287,7 +293,15 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val minecraftVersion = objects.property<String>()
 
-    override val javaVersion = objects.property<Int>()
+    override val javaVersion = objects.property<Int>().convention(minecraftVersion.map { v ->
+        // https://minecraft.wiki/w/Tutorial:Update_Java
+        ReleaseVersion.parseOrNull(v)?.let { when {
+            it >= ReleaseVersion(1, 20, 5) -> 21
+            it >= ReleaseVersion(1, 18, 0) -> 17
+            it >= ReleaseVersion(1, 17, 0) -> 16
+            else -> 8
+        }}
+    })
 
     override val parchment = objects.newInstance<ParchmentBlockImpl>(objects)
     init { parchment.minecraftVersion.convention(minecraftVersion) }
