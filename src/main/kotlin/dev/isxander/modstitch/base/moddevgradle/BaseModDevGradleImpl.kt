@@ -27,7 +27,7 @@ import org.slf4j.event.Level
 import kotlin.collections.dropLast
 import kotlin.collections.last
 
-class BaseModdevgradleImpl(
+class BaseModDevGradleImpl(
     private val type: MDGType
 ) : BaseCommonImpl<BaseModDevGradleExtension>(
     type.platform,
