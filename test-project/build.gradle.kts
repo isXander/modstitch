@@ -5,8 +5,9 @@ modstitch {
     mcpVersion = findProperty("mcpVersion") as String?
     neoFormVersion = findProperty("neoFormVersion") as String?
     minecraftVersion = findProperty("minecraftVersion") as String?
-    javaTarget = 17
+
     println(modLoaderManifest)
+    println(javaVersion.map { "Java version: $it" }.getOrElse("'javaVersion' is not set."))
 
     metadata {
         modId = "test_project"

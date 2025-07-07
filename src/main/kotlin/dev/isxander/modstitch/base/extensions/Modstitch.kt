@@ -106,7 +106,7 @@ interface ModstitchExtension {
     /**
      * The Java version to target.
      */
-    val javaTarget: Property<Int>
+    val javaVersion: Property<Int>
 
     /**
      * The Parchment configuration block.
@@ -286,7 +286,8 @@ open class ModstitchExtensionImpl @Inject constructor(
         set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { mcpVersion = value } } else {}
 
     override val minecraftVersion = objects.property<String>()
-    override val javaTarget = objects.property<Int>()
+
+    override val javaVersion = objects.property<Int>()
 
     override val parchment = objects.newInstance<ParchmentBlockImpl>(objects)
     init { parchment.minecraftVersion.convention(minecraftVersion) }
