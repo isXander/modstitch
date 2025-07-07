@@ -19,6 +19,8 @@ import javax.inject.Inject
 interface BaseLoomExtension : PlatformExtension<BaseLoomExtension> {
     /**
      * The version of Fabric Loader to use.
+     *
+     * Defaults to `0.15.0`.
      */
     val fabricLoaderVersion: Property<String>
 
@@ -38,7 +40,7 @@ open class BaseLoomExtensionImpl @Inject constructor(
     objects: ObjectFactory,
     @Transient private val project: Project
 ) : BaseLoomExtension {
-    override val fabricLoaderVersion: Property<String> = objects.property<String>()
+    override val fabricLoaderVersion: Property<String> = objects.property<String>().convention("0.15.0")
 
     override val loomExtension: LoomGradleExtensionAPI by ExtensionGetter(project)
     override fun configureLoom(action: Action<LoomGradleExtensionAPI>) =
