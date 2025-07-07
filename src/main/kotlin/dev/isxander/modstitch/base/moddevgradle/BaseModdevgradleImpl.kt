@@ -7,6 +7,7 @@ import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.addCamelCasePrefix
 import dev.isxander.modstitch.util.afterSuccessfulEvaluate
+import dev.isxander.modstitch.util.mainSourceSet
 import net.neoforged.moddevgradle.dsl.ModDevExtension
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.LegacyForgeExtension
@@ -42,31 +43,18 @@ class BaseModdevgradleImpl(
     )
 
     override fun apply(target: Project) {
-        val neoExt = createRealPlatformExtension(target, type)!!
+        createRealPlatformExtension(target, type)!!
         super.apply(target)
 
-        neoExt.configureNeoforge {
-            // version and neoForm version are set through functions
-            // called via the extension
+        val modstitch = target.modstitch
+        modstitch._namedJarTaskName = "jar"
+        modstitch._finalJarTaskName = if (type == MDGType.Legacy) "reobfJar" else "jar"
 
-            parchment {
-                parchmentArtifact = target.modstitch.parchment.parchmentArtifact
-                enabled = target.modstitch.parchment.enabled
-            }
-
-            runs {
-                configureEach {
-                    // Recommended practice per Neoforge MDK
-                    logLevel = Level.DEBUG
-                }
-            }
-
-            mods {
-                register("mod") {
-                    sourceSet(target.sourceSets["main"])
-                }
-            }
-        }
+        val moddev = target.extensions.getByType<ModDevExtension>()
+        moddev.parchment.parchmentArtifact = modstitch.parchment.parchmentArtifact
+        moddev.parchment.enabled = modstitch.parchment.enabled
+        moddev.runs.configureEach { logLevel = Level.DEBUG }
+        moddev.mods.register("mod") { sourceSet(target.sourceSets["main"]) }
 
         target.configurations.create("localRuntime") localRuntime@{
             target.configurations.named("runtimeOnly") {
@@ -74,11 +62,17 @@ class BaseModdevgradleImpl(
             }
         }
 
-        target.modstitch._finalJarTaskName = when (type) {
-            MDGType.Regular -> "jar"
-            MDGType.Legacy -> "reobfJar"
+        val obfuscation = target.extensions.findByType<ObfuscationExtension>()
+        if (obfuscation != null) {
+            // Proxy configurations will add remap configurations to this.
+            remapConfiguration = target.configurations.create("modstitchMdgRemap")
+            obfuscation.createRemappingConfiguration(remapConfiguration)
         }
-        target.modstitch._namedJarTaskName = "jar"
+
+        val mixin = target.extensions.findByType<MixinExtension>()
+        if (mixin != null) {
+            configureLegacyMixin(target, mixin)
+        }
     }
 
     override fun finalize(target: Project) {
@@ -173,18 +167,6 @@ class BaseModdevgradleImpl(
             }
             moddev.forgeVersion.isPresent -> Platform.MDGLegacy.modManifest
             else -> "" // MCP and NeoForm don't have a manifest.
-        }
-
-        val obfuscation = target.extensions.findByType<ObfuscationExtension>()
-        if (obfuscation != null) {
-            // Proxy configurations will add remap configurations to this.
-            remapConfiguration = target.configurations.create("modstitchMdgRemap")
-            obfuscation.createRemappingConfiguration(remapConfiguration)
-        }
-
-        val mixin = target.extensions.findByType<MixinExtension>()
-        if (mixin != null) {
-            configureLegacyMixin(target, mixin)
         }
 
         neoForge?.enable {
@@ -290,19 +272,11 @@ class BaseModdevgradleImpl(
             "annotationProcessor"("org.spongepowered:mixin:0.8.5:processor")
         }
 
-        val mainSourceSet = target.sourceSets["main"]
         stitchedMixin.mixinSourceSets.whenObjectAdded obj@{
-            mixin.add(
-                target.sourceSets[this@obj.sourceSetName.get()],
-                this@obj.refmapName.get()
-            )
+            mixin.add(target.sourceSets[this@obj.sourceSetName.get()], this@obj.refmapName.get())
         }
-        stitchedMixin.configs.whenObjectAdded obj@{
-            mixin.apply {
-                config(this@obj.config.get())
-            }
-        }
-        stitchedMixin.registerSourceSet(mainSourceSet, "${target.modstitch.metadata.modId.get()}.refmap.json")
+        stitchedMixin.configs.whenObjectAdded obj@{ mixin.configs.add(this@obj.config) }
+        stitchedMixin.registerSourceSet(target.mainSourceSet!!, modstitch.metadata.modId.map { "$it.refmap.json" })
 
         target.afterEvaluate {
             modstitch.namedJarTask {
