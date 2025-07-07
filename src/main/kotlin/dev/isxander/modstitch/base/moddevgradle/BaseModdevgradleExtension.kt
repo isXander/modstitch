@@ -44,7 +44,7 @@ interface BaseModDevGradleExtension {
      * Configures the NeoForge extension.
      * This action will only be executed if the current platform is ModDevGradle.
      */
-    fun configureNeoforge(action: Action<ModDevExtension>) = action.execute(neoforgeExtension)
+    fun configureNeoforge(action: Action<ModDevExtension>)
 
     /**
      * The underlying platform-specific extension: `obfuscation`
@@ -55,7 +55,7 @@ interface BaseModDevGradleExtension {
      * Configures the Obfuscation extension.
      * This action will only be executed if the current platform is ModDevGradle Legacy.
      */
-    fun configureObfuscation(action: Action<ObfuscationExtension>) = action.execute(obfuscationExtension)
+    fun configureObfuscation(action: Action<ObfuscationExtension>)
 
     /**
      * The underlying platform-specific extension: `mixin`
@@ -66,7 +66,7 @@ interface BaseModDevGradleExtension {
      * Configures the Mixin extension.
      * This action will only be executed if the current platform is ModDevGradle Legacy.
      */
-    fun configureMixin(action: Action<MixinExtension>) = action.execute(mixinExtension)
+    fun configureMixin(action: Action<MixinExtension>)
 
     /**
      * Creates two run configurations: one for the client and one for the server.
@@ -89,12 +89,16 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
     override val mcpVersion: Property<String> = objects.property()
 
     override val neoforgeExtension: ModDevExtension by ExtensionGetter(project)
+    override fun configureNeoforge(action: Action<ModDevExtension>) =
+        action(neoforgeExtension)
+
     override val mixinExtension: MixinExtension by ExtensionGetter(project)
     override fun configureMixin(action: Action<MixinExtension>) =
-        if (type == MDGType.Legacy) super.configureMixin(action) else {}
+        if (type == MDGType.Legacy) action(mixinExtension) else {}
+
     override val obfuscationExtension: ObfuscationExtension by ExtensionGetter(project)
     override fun configureObfuscation(action: Action<ObfuscationExtension>) =
-        if (type == MDGType.Legacy) super.configureObfuscation(action) else {}
+        if (type == MDGType.Legacy) action(obfuscationExtension) else {}
 
     override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String, String) -> String) {
         val project = project
@@ -133,6 +137,9 @@ open class BaseModDevGradleExtensionDummy : BaseModDevGradleExtension {
     override val mixinExtension: MixinExtension by NotExistsDelegate()
     override val obfuscationExtension: ObfuscationExtension by NotExistsDelegate()
 
+    override fun configureNeoforge(action: Action<ModDevExtension>) {}
+    override fun configureMixin(action: Action<MixinExtension>) {}
+    override fun configureObfuscation(action: Action<ObfuscationExtension>) {}
     override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String, String) -> String) {}
 }
 
