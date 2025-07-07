@@ -3,7 +3,6 @@ package dev.isxander.modstitch.base.extensions
 import dev.isxander.modstitch.base.*
 import dev.isxander.modstitch.base.loom.BaseLoomExtension
 import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtension
-import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtensionImpl
 import dev.isxander.modstitch.util.*
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -17,7 +16,6 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
-import java.util.*
 import javax.inject.Inject
 
 interface ModstitchExtension {
@@ -270,20 +268,20 @@ open class ModstitchExtensionImpl @Inject constructor(
         set(value) = if (value != null) platformExtension<BaseLoomExtension> { fabricLoaderVersion = value } else {}
 
     override var neoForgeVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.neoForgeVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { neoForgeVersion = value } } else {}
+        get() = platformExtension<BaseModDevGradleExtension, String> { it.neoForgeVersion.orNull }
+        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { neoForgeVersion = value } else {}
 
     override var forgeVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.forgeVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { forgeVersion = value } } else {}
+        get() = platformExtension<BaseModDevGradleExtension, String> { it.forgeVersion.orNull }
+        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { forgeVersion = value } else {}
 
     override var neoFormVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.neoFormVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { neoFormVersion = value } } else {}
+        get() = platformExtension<BaseModDevGradleExtension, String> { it.neoFormVersion.orNull }
+        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { neoFormVersion = value } else {}
 
     override var mcpVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.mcpVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { mcpVersion = value } } else {}
+        get() = platformExtension<BaseModDevGradleExtension, String> { it.mcpVersion.orNull }
+        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { mcpVersion = value } else {}
 
     override val minecraftVersion = objects.property<String>()
     override val javaTarget = objects.property<Int>()

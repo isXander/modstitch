@@ -3,12 +3,10 @@ package dev.isxander.modstitch.base.moddevgradle
 import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
-import dev.isxander.modstitch.util.NotExistsNullableDelegate
 import net.neoforged.moddevgradle.dsl.ModDevExtension
 import org.gradle.api.Action
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import net.neoforged.moddevgradle.dsl.RunModel
-import net.neoforged.moddevgradle.legacyforge.dsl.LegacyForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.MixinExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.ObfuscationExtension
 import org.gradle.api.Project
@@ -19,11 +17,24 @@ import org.gradle.kotlin.dsl.*
 
 interface BaseModDevGradleExtension {
     /**
-     * Configures and enables ModDevGradle for this project.
-     * Within [MDGEnableConfiguration] you can set the versions of NeoForge, Forge, NeoForm, and MCP.
-     * You must call [enable] exactly once in your build script.
+     * The version of NeoForge to use.
      */
-    fun enable(action: Action<MDGEnableConfiguration>)
+    val neoForgeVersion: Property<String>
+
+    /**
+     * The version of Forge to use.
+     */
+    val forgeVersion: Property<String>
+
+    /**
+     * The version of NeoForm to use.
+     */
+    val neoFormVersion: Property<String>
+
+    /**
+     * The version of MCP to use.
+     */
+    val mcpVersion: Property<String>
 
     /**
      * The underlying platform-specific extension: `neoForge`
@@ -70,13 +81,12 @@ interface BaseModDevGradleExtension {
 open class BaseModDevGradleExtensionImpl @Inject constructor(
     objects: ObjectFactory,
     @Transient private val project: Project,
-    val enableConfiguration: MDGEnableConfigurationInternal,
     val type: MDGType,
 ) : BaseModDevGradleExtension {
-    override fun enable(action: Action<MDGEnableConfiguration>) {
-        action.execute(enableConfiguration)
-        enableConfiguration.enable(project)
-    }
+    override val neoForgeVersion: Property<String> = objects.property()
+    override val forgeVersion: Property<String> = objects.property()
+    override val neoFormVersion: Property<String> = objects.property()
+    override val mcpVersion: Property<String> = objects.property()
 
     override val neoforgeExtension: ModDevExtension by ExtensionGetter(project)
     override val mixinExtension: MixinExtension by ExtensionGetter(project)
@@ -89,8 +99,8 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
     override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String, String) -> String) {
         val project = project
         val name = when {
-            !enableConfiguration.neoForgeVersion.isNullOrEmpty() -> "NeoForge"
-            !enableConfiguration.forgeVersion.isNullOrEmpty() -> "Forge"
+            neoForgeVersion.isPresent -> "NeoForge"
+            forgeVersion.isPresent -> "Forge"
             else -> "Minecraft"
         }
         configureNeoforge {
@@ -115,54 +125,15 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
 }
 
 open class BaseModDevGradleExtensionDummy : BaseModDevGradleExtension {
-    override fun enable(action: Action<MDGEnableConfiguration>) {}
-
+    override val neoForgeVersion: Property<String> by NotExistsDelegate()
+    override val forgeVersion: Property<String> by NotExistsDelegate()
+    override val neoFormVersion: Property<String> by NotExistsDelegate()
+    override val mcpVersion: Property<String> by NotExistsDelegate()
     override val neoforgeExtension: NeoForgeExtension by NotExistsDelegate()
     override val mixinExtension: MixinExtension by NotExistsDelegate()
     override val obfuscationExtension: ObfuscationExtension by NotExistsDelegate()
 
     override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String, String) -> String) {}
-}
-
-sealed interface MDGEnableConfiguration {
-    var neoForgeVersion: String?
-    var forgeVersion: String?
-    var neoFormVersion: String?
-    var mcpVersion: String?
-}
-sealed class MDGEnableConfigurationInternal(protected val impl: BaseModdevgradleImpl) : MDGEnableConfiguration {
-    internal open fun enable(target: Project) {
-        impl.enable(target, this)
-    }
-}
-class RegularEnableConfiguration(impl: BaseModdevgradleImpl, private val extension: NeoForgeExtension) : MDGEnableConfigurationInternal(impl) {
-    override var neoForgeVersion: String? = null
-    override var neoFormVersion: String? = null
-    override var forgeVersion: String? by NotExistsNullableDelegate()
-    override var mcpVersion: String? by NotExistsNullableDelegate()
-
-    override fun enable(target: Project) {
-        extension.enable {
-            version = this@RegularEnableConfiguration.neoForgeVersion
-            neoFormVersion = this@RegularEnableConfiguration.neoFormVersion
-        }
-        super.enable(target)
-    }
-}
-class LegacyEnableConfiguration(impl: BaseModdevgradleImpl, private val extension: LegacyForgeExtension) : MDGEnableConfigurationInternal(impl) {
-    override var neoForgeVersion: String? = null
-    override var neoFormVersion: String? by NotExistsNullableDelegate()
-    override var forgeVersion: String? = null
-    override var mcpVersion: String? = null
-
-    override fun enable(target: Project) {
-        extension.enable {
-            neoForgeVersion = this@LegacyEnableConfiguration.neoForgeVersion
-            forgeVersion = this@LegacyEnableConfiguration.forgeVersion
-            mcpVersion = this@LegacyEnableConfiguration.mcpVersion
-        }
-        super.enable(target)
-    }
 }
 
 val Project.msModdevgradle: BaseModDevGradleExtension
