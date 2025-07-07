@@ -35,7 +35,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
 
             val parchment = target.modstitch.parchment
             val loom = fabricExt.loomExtension
-            "mappings"(zip(parchment.enabled, parchment.parchmentArtifact.orElse("")) { enabled, parchmentArtifact ->
+            "mappings"(parchment.enabled.zip(parchment.parchmentArtifact.orElse("")) { enabled, parchmentArtifact ->
                 loom.layered {
                     officialMojangMappings()
                     if (enabled && parchmentArtifact.isNotEmpty()) {
