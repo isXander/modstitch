@@ -22,79 +22,11 @@ interface ModstitchExtension {
     /**
      * The mod loader version to target.
      *
-     * - When target platform is `loom`, this property is equivalent to [fabricLoaderVersion].
-     * - When target platform is `moddevgradle`, this property is equivalent to [neoForgeVersion].
-     * - When target platform is `moddevgradle-legacy`, this property is equivalent to [forgeVersion].
+     * - When target platform is `loom`, this property is equivalent to `loom.fabricLoaderVersion`.
+     * - When target platform is `moddevgradle`, this property is equivalent to `moddevgradle.neoForgeVersion`.
+     * - When target platform is `moddevgradle-legacy`, this property is equivalent to `moddevgradle.forgeVersion`.
      */
-    var modLoaderVersion: String?
-
-    /**
-     * The version of Fabric Loader to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * loom {
-     *     fabricLoaderVersion = value
-     * }
-     * ```
-     */
-    var fabricLoaderVersion: String?
-
-    /**
-     * The version of NeoForge to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         neoForgeVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var neoForgeVersion: String?
-
-    /**
-     * The version of Forge to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         forgeVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var forgeVersion: String?
-
-    /**
-     * The version of NeoForm to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         neoFormVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var neoFormVersion: String?
-
-    /**
-     * The version of MCP to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         mcpVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var mcpVersion: String?
+    val modLoaderVersion: Property<String>
 
     /**
      * The version of Minecraft to target by this build.
@@ -251,37 +183,11 @@ open class ModstitchExtensionImpl @Inject constructor(
     @Transient private val plugin: BaseCommonImpl<*>,
 ) : ModstitchExtension {
     // General setup for the mod environment.
-    override var modLoaderVersion: String?
-        get() = when (plugin.platform) {
-            Platform.Loom -> fabricLoaderVersion
-            Platform.MDG -> neoForgeVersion
-            Platform.MDGLegacy -> forgeVersion
-        }
-        set(value) = when (plugin.platform) {
-            Platform.Loom -> fabricLoaderVersion = value
-            Platform.MDG -> neoForgeVersion = value
-            Platform.MDGLegacy -> forgeVersion = value
-        }
-
-    override var fabricLoaderVersion: String?
-        get() = platformExtension<BaseLoomExtension, String> { it.fabricLoaderVersion.orNull }
-        set(value) = if (value != null) platformExtension<BaseLoomExtension> { fabricLoaderVersion = value } else {}
-
-    override var neoForgeVersion: String?
-        get() = platformExtension<BaseModDevGradleExtension, String> { it.neoForgeVersion.orNull }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { neoForgeVersion = value } else {}
-
-    override var forgeVersion: String?
-        get() = platformExtension<BaseModDevGradleExtension, String> { it.forgeVersion.orNull }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { forgeVersion = value } else {}
-
-    override var neoFormVersion: String?
-        get() = platformExtension<BaseModDevGradleExtension, String> { it.neoFormVersion.orNull }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { neoFormVersion = value } else {}
-
-    override var mcpVersion: String?
-        get() = platformExtension<BaseModDevGradleExtension, String> { it.mcpVersion.orNull }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { mcpVersion = value } else {}
+    override val modLoaderVersion: Property<String> get() = when (plugin.platform) {
+        Platform.Loom -> project.extensions.getByType<BaseLoomExtension>().fabricLoaderVersion
+        Platform.MDG -> project.extensions.getByType<BaseModDevGradleExtension>().neoForgeVersion
+        Platform.MDGLegacy -> project.extensions.getByType<BaseModDevGradleExtension>().forgeVersion
+    }
 
     override val minecraftVersion = objects.property<String>()
     override val javaTarget = objects.property<Int>()
@@ -332,11 +238,6 @@ open class ModstitchExtensionImpl @Inject constructor(
         if (platformExtension is T) {
             action.execute(platformExtension)
         }
-    }
-
-    private inline fun <reified T : Any, U> platformExtension(func: (T) -> U?) : U? {
-        val platformExtension = plugin.platformExtension
-        return if (platformExtension is T) func(platformExtension) else null
     }
 
     internal var _finalJarTaskName: String? = null
