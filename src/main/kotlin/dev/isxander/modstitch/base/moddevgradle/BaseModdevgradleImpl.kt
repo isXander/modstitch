@@ -43,12 +43,18 @@ class BaseModdevgradleImpl(
     )
 
     override fun apply(target: Project) {
-        createRealPlatformExtension(target, type)!!
+        val ext = createRealPlatformExtension(target, type)!!
         super.apply(target)
 
         val modstitch = target.modstitch
         modstitch._namedJarTaskName = "jar"
         modstitch._finalJarTaskName = if (type == MDGType.Legacy) "reobfJar" else "jar"
+        modstitch.modLoaderManifest.convention(ext.neoForgeVersion.map { when (Semver.coerce(it)?.satisfies("<20.5")) {
+            true -> Platform.MDGLegacy.modManifest
+            else -> Platform.MDG.modManifest
+        }}.orElse(ext.forgeVersion.map {
+            Platform.MDGLegacy.modManifest
+        }))
 
         val moddev = target.extensions.getByType<ModDevExtension>()
         moddev.parchment.parchmentArtifact = modstitch.parchment.parchmentArtifact
@@ -147,7 +153,6 @@ class BaseModdevgradleImpl(
      * @param target The project for which the ModDev extension is to be enabled.
      */
     private fun enable(target: Project) {
-        val modstitch = target.modstitch
         val moddev = target.extensions.getByType<BaseModDevGradleExtension>()
         val neoForge = target.extensions.findByType<NeoForgeExtension>()
         val legacyForge = target.extensions.findByType<LegacyForgeExtension>()
@@ -156,18 +161,6 @@ class BaseModdevgradleImpl(
         moddev.neoFormVersion.finalizeValueOnRead()
         moddev.forgeVersion.finalizeValueOnRead()
         moddev.mcpVersion.finalizeValueOnRead()
-
-        modstitch._modLoaderManifest = when {
-            moddev.neoForgeVersion.isPresent -> {
-                if (Semver.coerce(moddev.neoForgeVersion.get())?.satisfies("<20.5") == true) {
-                    Platform.MDGLegacy.modManifest
-                } else {
-                    Platform.MDG.modManifest
-                }
-            }
-            moddev.forgeVersion.isPresent -> Platform.MDGLegacy.modManifest
-            else -> "" // MCP and NeoForm don't have a manifest.
-        }
 
         neoForge?.enable {
             version = moddev.neoForgeVersion.orNull

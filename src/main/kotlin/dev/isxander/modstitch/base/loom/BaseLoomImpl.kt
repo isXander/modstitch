@@ -47,7 +47,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
             "modImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader:$it" })
         }
 
-        target.modstitch._modLoaderManifest = Platform.Loom.modManifest
+        target.modstitch.modLoaderManifest.convention(Platform.Loom.modManifest)
 
         target.modstitch._finalJarTaskName = "remapJar"
         target.modstitch._namedJarTaskName = "jar"

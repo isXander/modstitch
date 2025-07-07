@@ -98,13 +98,13 @@ interface ModstitchExtension {
 
     /**
      * The mod loader manifest to use.
-     * - On Loom, this is `fabric.mod.json`.
-     * - On ModDevGradle (>1.20.4), this is `META-INF/neoforge.mods.toml`.
-     * - On ModDevGradle (<1.20.5), this is `META-INF/mods.toml`.
-     * - On ModDevGradle Legacy, this is `META-INF/mods.toml`.
-     * - In environments where there is no mod loader manifest, like vanilla mode of MDG, this is an empty string.
+     * - On Loom, this defaults to `fabric.mod.json`.
+     * - On ModDevGradle (>=1.20.5), this defaults to `META-INF/neoforge.mods.toml`.
+     * - On ModDevGradle (<1.20.5), this defaults to `META-INF/mods.toml`.
+     * - On ModDevGradle Legacy, this defaults to `META-INF/mods.toml`.
+     * - In environments without a mod loader manifest, this property has no value.
      */
-    val modLoaderManifest: String
+    val modLoaderManifest: Property<String>
 
     /**
      * Creates proxy configurations for the given configuration.
@@ -210,9 +210,7 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val validateAccessWidener = objects.property<Boolean>().convention(false)
 
-    var _modLoaderManifest: String? = null
-    override val modLoaderManifest
-        get() = _modLoaderManifest ?: error("Mod loader manifest not set")
+    override val modLoaderManifest = objects.property<String>()
 
     override fun createProxyConfigurations(configuration: Configuration) =
         plugin.createProxyConfigurations(project, FutureNamedDomainObjectProvider.from(configuration), defer = false)
