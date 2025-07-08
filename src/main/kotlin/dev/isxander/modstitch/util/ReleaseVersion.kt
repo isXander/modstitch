@@ -26,13 +26,13 @@ internal data class ReleaseVersion(val major: Int, val minor: Int, val patch: In
         /**
          * A pattern used to match release version strings.
          */
-        private val PATTERN = Regex("(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?")
+        private val PATTERN = Regex("^\\s*(\\d+)\\.(\\d+)(?:\\.(\\d+))?")
 
         /**
          * Attempts to parse a dot-separated version string into a [ReleaseVersion].
          *
-         * Accepts up to three numeric components (e.g., "1", "1.2", "1.2.3").
-         * Missing components default to zero.
+         * Accepts two or three numeric components (e.g., "1.2" or "1.2.3").
+         * Missing patch component defaults to zero.
          *
          * @param value The input string to parse.
          * @return A [ReleaseVersion] instance, or `null` if parsing fails.
