@@ -24,6 +24,11 @@ internal data class ReleaseVersion(val major: Int, val minor: Int, val patch: In
 
     companion object {
         /**
+         * A pattern used to match release version strings.
+         */
+        private val PATTERN = Regex("(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?")
+
+        /**
          * Attempts to parse a dot-separated version string into a [ReleaseVersion].
          *
          * Accepts up to three numeric components (e.g., "1", "1.2", "1.2.3").
@@ -32,12 +37,7 @@ internal data class ReleaseVersion(val major: Int, val minor: Int, val patch: In
          * @param value The input string to parse.
          * @return A [ReleaseVersion] instance, or `null` if parsing fails.
          */
-        fun parseOrNull(value: CharSequence): ReleaseVersion? {
-            val parts = value.splitToSequence('.').take(3).map { it.toIntOrNull() }.toList()
-            if (parts.isEmpty() || parts.any { it == null }) {
-                return null
-            }
-            return ReleaseVersion(parts[0] ?: 0, parts.elementAtOrNull(1) ?: 0, parts.elementAtOrNull(2) ?: 0)
-        }
+        fun parseOrNull(value: CharSequence): ReleaseVersion? =
+            PATTERN.find(value)?.groupValues?.map { it.toIntOrNull() ?: 0 }?.let { ReleaseVersion(it[1], it[2], it[3]) }
     }
 }
