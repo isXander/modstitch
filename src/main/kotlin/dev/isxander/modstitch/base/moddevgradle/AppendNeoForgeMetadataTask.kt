@@ -13,7 +13,9 @@ import java.io.File
 abstract class AppendNeoForgeMetadataTask : AppendModMetadataTask() {
     override fun appendModMetadata(file: File) {
         val config = TomlFormat.instance().createParser().parse(file, FileNotFoundAction.THROW_ERROR)
-        appendNewEntries(config, "mixins", "config", mixins.get().map { it.config })
+        if (mixins.isPresent) {
+            appendNewEntries(config, "mixins", "config", mixins.get().map { it.config })
+        }
         appendNewEntries(config, "accessTransformers", "file", accessWideners.get())
 
         TomlFormat.instance().createWriter().write(config, file, WritingMode.REPLACE)

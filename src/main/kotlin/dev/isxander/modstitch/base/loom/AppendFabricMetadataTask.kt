@@ -24,25 +24,28 @@ abstract class AppendFabricMetadataTask : AppendModMetadataTask() {
             json.addProperty("accessWidener", accessWidener)
         }
 
-        val mixinConfigs = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }
-        val existingMixinConfigs = mixinConfigs.map { when {
-            it.isJsonObject -> it.asJsonObject.get("config")?.asString ?: ""
-            it.isJsonPrimitive && it.asJsonPrimitive.isString -> it.asString
-            else -> it.toString()
-        }}
-        for (mixin in mixins.get()) {
-            if (existingMixinConfigs.contains(mixin.config)) {
-                continue
-            }
+        if (mixins.isPresent) {
+            val mixinConfigs = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }
+            val existingMixinConfigs = mixinConfigs.map { when {
+                it.isJsonObject -> it.asJsonObject.get("config")?.asString ?: ""
+                it.isJsonPrimitive && it.asJsonPrimitive.isString -> it.asString
+                else -> it.toString()
+            }}
 
-            val mixinConfig = JsonObject()
-            mixinConfig.addProperty("config", mixin.config)
-            mixinConfig.addProperty("environment", when (mixin.side) {
-                Side.Both -> "*"
-                Side.Client -> "client"
-                Side.Server -> "server"
-            })
-            mixinConfigs.add(mixinConfig)
+            for (mixin in mixins.get()) {
+                if (existingMixinConfigs.contains(mixin.config)) {
+                    continue
+                }
+
+                val mixinConfig = JsonObject()
+                mixinConfig.addProperty("config", mixin.config)
+                mixinConfig.addProperty("environment", when (mixin.side) {
+                    Side.Both -> "*"
+                    Side.Client -> "client"
+                    Side.Server -> "server"
+                })
+                mixinConfigs.add(mixinConfig)
+            }
         }
 
         return file.writer().use { gson.toJson(json, it) }
