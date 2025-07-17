@@ -208,7 +208,7 @@ abstract class BaseCommonImpl<T : Any>(
                 // Now build the set of manifests to exclude dynamically
                 val manifestsToExclude = Platform.allModManifests - currentManifest
                 // Return true if the file should be excluded, false otherwise
-                fileTreeElement.name in manifestsToExclude
+                fileTreeElement.relativePath.toString() in manifestsToExclude
             }
         }
         // Include the output of "generateModMetadata" as an input directory for the build
