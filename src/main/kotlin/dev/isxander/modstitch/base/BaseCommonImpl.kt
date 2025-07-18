@@ -145,7 +145,7 @@ abstract class BaseCommonImpl<T : Any>(
 
         target.extensions.configure<JavaPluginExtension> {
             target.afterEvaluate {
-                val javaVersion = JavaVersion.toVersion(target.modstitch.javaTarget.get())
+                val javaVersion = JavaVersion.toVersion(target.modstitch.javaVersion.get())
                 targetCompatibility = javaVersion
                 sourceCompatibility = javaVersion
             }
