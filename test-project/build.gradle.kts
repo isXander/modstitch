@@ -14,6 +14,7 @@ modstitch {
     }
 
     println(modLoaderManifest.getOrElse("'modLoaderManifest' is not set."))
+    println(javaVersion.map { "Java version: $it" }.getOrElse("'javaVersion' is not set."))
 
     metadata {
         modId = "test_project"

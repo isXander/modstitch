@@ -145,7 +145,7 @@ abstract class BaseCommonImpl<T : Any>(
 
         target.extensions.configure<JavaPluginExtension> {
             target.afterEvaluate {
-                val javaVersion = JavaVersion.toVersion(target.modstitch.javaTarget.get())
+                val javaVersion = JavaVersion.toVersion(target.modstitch.javaVersion.get())
                 targetCompatibility = javaVersion
                 sourceCompatibility = javaVersion
             }
@@ -208,7 +208,7 @@ abstract class BaseCommonImpl<T : Any>(
                 // Now build the set of manifests to exclude dynamically
                 val manifestsToExclude = Platform.allModManifests - currentManifest
                 // Return true if the file should be excluded, false otherwise
-                fileTreeElement.name in manifestsToExclude
+                fileTreeElement.relativePath.pathString in manifestsToExclude
             }
         }
         // Include the output of "generateModMetadata" as an input directory for the build
