@@ -89,7 +89,7 @@ abstract class BaseCommonImpl<T : Any>(
             dependsOn("processResources")
 
             source(msExt.modLoaderManifest.map { listOf(project.mainSourceSet!!.output.resourcesDir!!.resolve(it)) }.orElse(listOf()))
-            mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } })
+            mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } }.zip(msExt.mixin.addMixinsToModManifest) { configs, addToManifest -> if (!addToManifest) emptyList() else configs })
             accessWideners.value(msExt.accessWidenerName.zip(msExt.accessWidener) { n, _ -> listOf(n) }.orElse(listOf()))
         }.also { target.tasks["processResources"].finalizedBy(it) }
     }
