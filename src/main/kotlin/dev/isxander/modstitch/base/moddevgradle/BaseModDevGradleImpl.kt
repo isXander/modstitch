@@ -6,6 +6,8 @@ import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.addCamelCasePrefix
+import dev.isxander.modstitch.util.afterSuccessfulEvaluate
+import dev.isxander.modstitch.util.mainSourceSet
 import net.neoforged.moddevgradle.dsl.ModDevExtension
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.LegacyForgeExtension
@@ -25,7 +27,7 @@ import org.slf4j.event.Level
 import kotlin.collections.dropLast
 import kotlin.collections.last
 
-class BaseModdevgradleImpl(
+class BaseModDevGradleImpl(
     private val type: MDGType
 ) : BaseCommonImpl<BaseModDevGradleExtension>(
     type.platform,
@@ -41,32 +43,24 @@ class BaseModdevgradleImpl(
     )
 
     override fun apply(target: Project) {
+        val ext = createRealPlatformExtension(target, type)!!
         super.apply(target)
 
-        val neoExt = target.msModdevgradle
+        val modstitch = target.modstitch
+        modstitch._namedJarTaskName = "jar"
+        modstitch._finalJarTaskName = if (type == MDGType.Legacy) "reobfJar" else "jar"
+        modstitch.modLoaderManifest.convention(ext.neoForgeVersion.map { when (Semver.coerce(it)?.satisfies("<20.5")) {
+            true -> Platform.MDGLegacy.modManifest
+            else -> Platform.MDG.modManifest
+        }}.orElse(ext.forgeVersion.map {
+            Platform.MDGLegacy.modManifest
+        }))
 
-        neoExt.configureNeoforge {
-            // version and neoForm version are set through functions
-            // called via the extension
-
-            parchment {
-                parchmentArtifact = target.modstitch.parchment.parchmentArtifact
-                enabled = target.modstitch.parchment.enabled
-            }
-
-            runs {
-                configureEach {
-                    // Recommended practice per Neoforge MDK
-                    logLevel = Level.DEBUG
-                }
-            }
-
-            mods {
-                register("mod") {
-                    sourceSet(target.sourceSets["main"])
-                }
-            }
-        }
+        val moddev = target.extensions.getByType<ModDevExtension>()
+        moddev.parchment.parchmentArtifact = modstitch.parchment.parchmentArtifact
+        moddev.parchment.enabled = modstitch.parchment.enabled
+        moddev.runs.configureEach { logLevel = Level.DEBUG } // recommended by NeoForge MDK
+        moddev.mods.register("mod") { sourceSet(target.sourceSets["main"]) }
 
         target.configurations.create("localRuntime") localRuntime@{
             target.configurations.named("runtimeOnly") {
@@ -74,11 +68,22 @@ class BaseModdevgradleImpl(
             }
         }
 
-        target.modstitch._finalJarTaskName = when (type) {
-            MDGType.Regular -> "jar"
-            MDGType.Legacy -> "reobfJar"
+        val obfuscation = target.extensions.findByType<ObfuscationExtension>()
+        if (obfuscation != null) {
+            // Proxy configurations will add remap configurations to this.
+            remapConfiguration = target.configurations.create("modstitchMdgRemap")
+            obfuscation.createRemappingConfiguration(remapConfiguration)
         }
-        target.modstitch._namedJarTaskName = "jar"
+
+        val mixin = target.extensions.findByType<MixinExtension>()
+        if (mixin != null) {
+            configureLegacyMixin(target, mixin)
+        }
+    }
+
+    override fun finalize(target: Project) {
+        enable(target)
+        super.finalize(target)
     }
 
     override fun applyAccessWidener(target: Project) {
@@ -142,50 +147,41 @@ class BaseModdevgradleImpl(
         }
     }
 
-    fun enable(target: Project, configuration: MDGEnableConfiguration) {
-        if (target.pluginManager.hasPlugin(EnabledMarkerPlugin.ID)) {
-            return
-        }
+    /**
+     * Enables the underlying [ModDevExtension].
+     *
+     * @param target The project for which the ModDev extension is to be enabled.
+     */
+    private fun enable(target: Project) {
+        val moddev = target.extensions.getByType<BaseModDevGradleExtension>()
+        val neoForge = target.extensions.findByType<NeoForgeExtension>()
+        val legacyForge = target.extensions.findByType<LegacyForgeExtension>()
 
-        target.modstitch._modLoaderManifest = when {
-            configuration.neoForgeVersion != null -> {
-                if (Semver.coerce(configuration.neoForgeVersion)?.satisfies("<20.5") == true) {
-                    Platform.MDGLegacy.modManifest
-                } else {
-                    Platform.MDG.modManifest
-                }
-            }
-            configuration.forgeVersion != null -> Platform.MDGLegacy.modManifest
-            else -> "" // mcp or neoform don't have a manifest.
-        }
+        moddev.neoForgeVersion.finalizeValueOnRead()
+        moddev.neoFormVersion.finalizeValueOnRead()
+        moddev.forgeVersion.finalizeValueOnRead()
+        moddev.mcpVersion.finalizeValueOnRead()
 
-        if (type == MDGType.Legacy) {
-            // proxy configurations will add remap configurations to this
-            remapConfiguration = target.configurations.create("modstitchMdgRemap")
-            target.obfuscation.createRemappingConfiguration(remapConfiguration)
+        neoForge?.enable {
+            version = moddev.neoForgeVersion.orNull
+            neoFormVersion = moddev.neoFormVersion.orNull
+            moddev.forgeVersion.map { error("Property 'forgeVersion' does not exist.") }.orNull
+            moddev.mcpVersion.map { error("Property 'mcpVersion' does not exist.") }.orNull
         }
-
-        if (type == MDGType.Legacy) {
-            setupLegacyMixin(target)
+        legacyForge?.enable {
+            forgeVersion = moddev.forgeVersion.orNull
+            neoForgeVersion = moddev.neoForgeVersion.orNull
+            mcpVersion = moddev.mcpVersion.orNull
+            moddev.neoForgeVersion.map { error("Property 'neoForgeVersion' does not exist.") }.orNull
         }
-
-        target.pluginManager.apply(EnabledMarkerPlugin::class)
     }
 
     override fun applyPlugins(target: Project) {
         super.applyPlugins(target)
-
-        val enabler = when (type) {
-            MDGType.Regular -> {
-                target.pluginManager.apply("net.neoforged.moddev")
-                RegularEnableConfiguration(this, target.extensions.getByType<NeoForgeExtension>())
-            }
-            MDGType.Legacy -> {
-                target.pluginManager.apply("net.neoforged.moddev.legacyforge")
-                LegacyEnableConfiguration(this, target.extensions.getByType<LegacyForgeExtension>())
-            }
-        }
-        createRealPlatformExtension(target, enabler, type)!!
+        target.pluginManager.apply(when (type) {
+            MDGType.Regular -> "net.neoforged.moddev"
+            MDGType.Legacy -> "net.neoforged.moddev.legacyforge"
+        })
     }
 
     override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
@@ -193,7 +189,7 @@ class BaseModdevgradleImpl(
 
         // Generate mod metadata every project reload, instead of manually
         // (see `generateModMetadata` task in `common.gradle.kts`)
-        target.msModdevgradle.configureNeoforge {
+        target.msModdevgradle.configureNeoForge {
             ideSyncTask(generateModMetadata)
         }
 
@@ -211,7 +207,7 @@ class BaseModdevgradleImpl(
 
         fun deferred(action: (Configuration) -> Unit) {
             if (!defer) return action(configuration.get())
-            return target.onMdgEnable { action(configuration.get()) }
+            return target.afterSuccessfulEvaluate { action(configuration.get()) }
         }
 
         target.configurations.create(proxyModConfigurationName) proxy@{
@@ -219,9 +215,10 @@ class BaseModdevgradleImpl(
                 it.extendsFrom(this@proxy)
             }
 
-            target.onMdgEnable {
-                if (type == MDGType.Legacy)
+            target.afterSuccessfulEvaluate {
+                if (type == MDGType.Legacy) {
                     remapConfiguration.extendsFrom(this@proxy)
+                }
             }
         }
 
@@ -230,7 +227,7 @@ class BaseModdevgradleImpl(
                 it.extendsFrom(this@proxy)
             }
 
-            target.onMdgEnable {
+            target.afterSuccessfulEvaluate {
                 target.configurations.named("additionalRuntimeClasspath") {
                     extendsFrom(this@proxy)
                 }
@@ -239,7 +236,7 @@ class BaseModdevgradleImpl(
     }
 
     override fun configureJiJConfiguration(target: Project, configuration: Configuration) {
-        target.onMdgEnable {
+        target.afterSuccessfulEvaluate {
             target.configurations.named("jarJar") {
                 extendsFrom(configuration)
             }
@@ -254,48 +251,34 @@ class BaseModdevgradleImpl(
         }
     }
 
-    private fun setupLegacyMixin(target: Project) {
-        val mixin = target.modstitch.mixin
+    /**
+     * Configures mixins for Legacy Forge.
+     *
+     * @param target The project for which mixins are to be configured.
+     * @param mixin The mixin extension used to generate refmaps.
+     */
+    private fun configureLegacyMixin(target: Project, mixin: MixinExtension) {
+        val modstitch = target.modstitch
+        val stitchedMixin = modstitch.mixin
 
         target.dependencies {
             "annotationProcessor"("org.spongepowered:mixin:0.8.5:processor")
         }
 
-        val mainSourceSet = target.sourceSets["main"]
-        mixin.mixinSourceSets.whenObjectAdded obj@{
-            target.mixin.add(
-                target.sourceSets[this@obj.sourceSetName.get()],
-                this@obj.refmapName.get()
-            )
+        stitchedMixin.mixinSourceSets.whenObjectAdded obj@{
+            mixin.add(target.sourceSets[this@obj.sourceSetName.get()], this@obj.refmapName.get())
         }
-        mixin.configs.whenObjectAdded obj@{
-            target.mixin.apply {
-                config(this@obj.config.get())
-            }
-        }
-        mixin.registerSourceSet(mainSourceSet, "${target.modstitch.metadata.modId.get()}.refmap.json")
+        stitchedMixin.configs.whenObjectAdded obj@{ mixin.configs.add(this@obj.config) }
+        stitchedMixin.registerSourceSet(target.mainSourceSet!!, modstitch.metadata.modId.map { "$it.refmap.json" })
 
         target.afterEvaluate {
             modstitch.namedJarTask {
-                manifest.attributes["MixinConfigs"] = mixin.configs.joinToString(",") { it.config.get() }
+                manifest.attributes["MixinConfigs"] = stitchedMixin.configs.joinToString(",") { it.config.get() }
             }
         }
     }
 
-    private val Project.platformExt: BaseModDevGradleExtension
-        get() = extensions.getByType<BaseModDevGradleExtension>()
-
-    private val Project.obfuscation: ObfuscationExtension
-        get() = if (type == MDGType.Legacy) extensions.getByType<ObfuscationExtension>() else error("Obfuscation is not available in this context")
-
-    private val Project.mixin: MixinExtension
-        get() = if (type == MDGType.Legacy) extensions.getByType<MixinExtension>() else error("Mixin is not available in this context")
-
-    private fun Project.onMdgEnable(action: () -> Unit) = onEnable(this) { action() }
-
     override fun onEnable(target: Project, action: Action<Project>) {
-        target.pluginManager.withPlugin(EnabledMarkerPlugin.ID) {
-            action.execute(target)
-        }
+        target.afterSuccessfulEvaluate(action)
     }
 }

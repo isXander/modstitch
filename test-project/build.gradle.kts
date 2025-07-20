@@ -1,12 +1,19 @@
 modstitch {
-    fabricLoaderVersion = findProperty("fabricLoaderVersion") as String?
-    neoForgeVersion = findProperty("neoForgeVersion") as String?
-    forgeVersion = findProperty("forgeVersion") as String?
-    mcpVersion = findProperty("mcpVersion") as String?
-    neoFormVersion = findProperty("neoFormVersion") as String?
     minecraftVersion = findProperty("minecraftVersion") as String?
+    javaVersion = 17
 
-    println(modLoaderManifest)
+    loom {
+        fabricLoaderVersion = findProperty("fabricLoaderVersion") as String?
+    }
+
+    moddevgradle {
+        neoForgeVersion = findProperty("neoForgeVersion") as String?
+        forgeVersion = findProperty("forgeVersion") as String?
+        mcpVersion = findProperty("mcpVersion") as String?
+        neoFormVersion = findProperty("neoFormVersion") as String?
+    }
+
+    println(modLoaderManifest.getOrElse("'modLoaderManifest' is not set."))
     println(javaVersion.map { "Java version: $it" }.getOrElse("'javaVersion' is not set."))
 
     metadata {

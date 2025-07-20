@@ -2,7 +2,7 @@ package dev.isxander.modstitch.util
 
 import org.gradle.api.Project
 
-enum class Platform(val friendlyName: String, val modManifest: String?) {
+enum class Platform(val friendlyName: String, val modManifest: String) {
     Loom("loom", "fabric.mod.json"),
     MDG("moddevgradle", "META-INF/neoforge.mods.toml"),
     MDGLegacy("moddevgradle-legacy", "META-INF/mods.toml");
@@ -17,7 +17,7 @@ enum class Platform(val friendlyName: String, val modManifest: String?) {
         get() = this == Loom
 
     companion object {
-        val allModManifests = values().mapNotNull { it.modManifest }
+        val allModManifests = values().map { it.modManifest }
 
         fun fromFriendlyName(name: String): Platform? {
             return values().firstOrNull { it.friendlyName == name }

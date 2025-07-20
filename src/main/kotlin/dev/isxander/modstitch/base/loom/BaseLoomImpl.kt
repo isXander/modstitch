@@ -35,7 +35,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
 
             val parchment = target.modstitch.parchment
             val loom = fabricExt.loomExtension
-            "mappings"(zip(parchment.enabled, parchment.parchmentArtifact.orElse("")) { enabled, parchmentArtifact ->
+            "mappings"(parchment.enabled.zip(parchment.parchmentArtifact.orElse("")) { enabled, parchmentArtifact ->
                 loom.layered {
                     officialMojangMappings()
                     if (enabled && parchmentArtifact.isNotEmpty()) {
@@ -47,7 +47,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
             "modImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader:$it" })
         }
 
-        target.modstitch._modLoaderManifest = Platform.Loom.modManifest
+        target.modstitch.modLoaderManifest.convention(Platform.Loom.modManifest)
 
         target.modstitch._finalJarTaskName = "remapJar"
         target.modstitch._namedJarTaskName = "jar"

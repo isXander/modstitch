@@ -3,7 +3,6 @@ package dev.isxander.modstitch.base.extensions
 import dev.isxander.modstitch.base.*
 import dev.isxander.modstitch.base.loom.BaseLoomExtension
 import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtension
-import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtensionImpl
 import dev.isxander.modstitch.util.*
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -17,86 +16,17 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
-import java.util.*
 import javax.inject.Inject
 
 interface ModstitchExtension {
     /**
      * The mod loader version to target.
      *
-     * - When target platform is `loom`, this property is equivalent to [fabricLoaderVersion].
-     * - When target platform is `moddevgradle`, this property is equivalent to [neoForgeVersion].
-     * - When target platform is `moddevgradle-legacy`, this property is equivalent to [forgeVersion].
+     * - When target platform is `loom`, this property is equivalent to `loom.fabricLoaderVersion`.
+     * - When target platform is `moddevgradle`, this property is equivalent to `moddevgradle.neoForgeVersion`.
+     * - When target platform is `moddevgradle-legacy`, this property is equivalent to `moddevgradle.forgeVersion`.
      */
-    var modLoaderVersion: String?
-
-    /**
-     * The version of Fabric Loader to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * loom {
-     *     fabricLoaderVersion = value
-     * }
-     * ```
-     */
-    var fabricLoaderVersion: String?
-
-    /**
-     * The version of NeoForge to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         neoForgeVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var neoForgeVersion: String?
-
-    /**
-     * The version of Forge to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         forgeVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var forgeVersion: String?
-
-    /**
-     * The version of NeoForm to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         neoFormVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var neoFormVersion: String?
-
-    /**
-     * The version of MCP to use.
-     *
-     * Setting this property is loosely equivalent to:
-     * ```
-     * moddevgradle {
-     *     enable {
-     *         mcpVersion = value
-     *     }
-     * }
-     * ```
-     */
-    var mcpVersion: String?
+    val modLoaderVersion: Property<String>
 
     /**
      * The version of Minecraft to target by this build.
@@ -174,13 +104,13 @@ interface ModstitchExtension {
 
     /**
      * The mod loader manifest to use.
-     * - On Loom, this is `fabric.mod.json`.
-     * - On ModDevGradle (>1.20.4), this is `META-INF/neoforge.mods.toml`.
-     * - On ModDevGradle (<1.20.5), this is `META-INF/mods.toml`.
-     * - On ModDevGradle Legacy, this is `META-INF/mods.toml`.
-     * - In environments where there is no mod loader manifest, like vanilla mode of MDG, this is an empty string.
+     * - On Loom, this defaults to `fabric.mod.json`.
+     * - On ModDevGradle (>=1.20.5), this defaults to `META-INF/neoforge.mods.toml`.
+     * - On ModDevGradle (<1.20.5), this defaults to `META-INF/mods.toml`.
+     * - On ModDevGradle Legacy, this defaults to `META-INF/mods.toml`.
+     * - In environments without a mod loader manifest, this property has no value.
      */
-    val modLoaderManifest: String
+    val modLoaderManifest: Property<String>
 
     /**
      * Creates proxy configurations for the given configuration.
@@ -259,37 +189,11 @@ open class ModstitchExtensionImpl @Inject constructor(
     @Transient private val plugin: BaseCommonImpl<*>,
 ) : ModstitchExtension {
     // General setup for the mod environment.
-    override var modLoaderVersion: String?
-        get() = when (plugin.platform) {
-            Platform.Loom -> fabricLoaderVersion
-            Platform.MDG -> neoForgeVersion
-            Platform.MDGLegacy -> forgeVersion
-        }
-        set(value) = when (plugin.platform) {
-            Platform.Loom -> fabricLoaderVersion = value
-            Platform.MDG -> neoForgeVersion = value
-            Platform.MDGLegacy -> forgeVersion = value
-        }
-
-    override var fabricLoaderVersion: String?
-        get() = platformExtension<BaseLoomExtension, String> { it.fabricLoaderVersion.orNull }
-        set(value) = if (value != null) platformExtension<BaseLoomExtension> { fabricLoaderVersion = value } else {}
-
-    override var neoForgeVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.neoForgeVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { neoForgeVersion = value } } else {}
-
-    override var forgeVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.forgeVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { forgeVersion = value } } else {}
-
-    override var neoFormVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.neoFormVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { neoFormVersion = value } } else {}
-
-    override var mcpVersion: String?
-        get() = platformExtension<BaseModDevGradleExtensionImpl, String> { it.enableConfiguration.mcpVersion }
-        set(value) = if (value != null) platformExtension<BaseModDevGradleExtension> { enable { mcpVersion = value } } else {}
+    override val modLoaderVersion: Property<String> get() = when (plugin.platform) {
+        Platform.Loom -> project.extensions.getByType<BaseLoomExtension>().fabricLoaderVersion
+        Platform.MDG -> project.extensions.getByType<BaseModDevGradleExtension>().neoForgeVersion
+        Platform.MDGLegacy -> project.extensions.getByType<BaseModDevGradleExtension>().forgeVersion
+    }
 
     override val minecraftVersion = objects.property<String>()
 
@@ -321,9 +225,7 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val validateAccessWidener = objects.property<Boolean>().convention(false)
 
-    var _modLoaderManifest: String? = null
-    override val modLoaderManifest
-        get() = _modLoaderManifest ?: error("Mod loader manifest not set")
+    override val modLoaderManifest = objects.property<String>()
 
     override fun createProxyConfigurations(configuration: Configuration) =
         plugin.createProxyConfigurations(project, FutureNamedDomainObjectProvider.from(configuration), defer = false)
@@ -349,11 +251,6 @@ open class ModstitchExtensionImpl @Inject constructor(
         if (platformExtension is T) {
             action.execute(platformExtension)
         }
-    }
-
-    private inline fun <reified T : Any, U> platformExtension(func: (T) -> U?) : U? {
-        val platformExtension = plugin.platformExtension
-        return if (platformExtension is T) func(platformExtension) else null
     }
 
     internal var _finalJarTaskName: String? = null

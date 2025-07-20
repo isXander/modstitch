@@ -88,7 +88,7 @@ abstract class BaseCommonImpl<T : Any>(
             group = "modstitch/internal"
             dependsOn("processResources")
 
-            source(target.mainSourceSet!!.output.resourcesDir!!.resolve(msExt.modLoaderManifest))
+            source(msExt.modLoaderManifest.map { listOf(project.mainSourceSet!!.output.resourcesDir!!.resolve(it)) }.orElse(listOf()))
             mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } })
             accessWideners.value(msExt.accessWidenerName.zip(msExt.accessWidener) { n, _ -> listOf(n) }.orElse(listOf()))
         }.also { target.tasks["processResources"].finalizedBy(it) }
@@ -204,7 +204,7 @@ abstract class BaseCommonImpl<T : Any>(
 
             exclude { fileTreeElement ->
                 // At execution time, modLoaderManifest should be resolvable
-                val currentManifest = modstitch.modLoaderManifest
+                val currentManifest = modstitch.modLoaderManifest.orNull
                 // Now build the set of manifests to exclude dynamically
                 val manifestsToExclude = Platform.allModManifests - currentManifest
                 // Return true if the file should be excluded, false otherwise
