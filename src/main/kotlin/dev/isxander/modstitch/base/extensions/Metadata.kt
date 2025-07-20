@@ -67,6 +67,14 @@ interface MetadataBlock {
      * Resources in the `templates` directory will be expanded with these values.
      */
     val replacementProperties: MapProperty<String, String>
+
+    /**
+     * Defines whether Modstitch should overwrite `project.group` and `project.version`
+     * with [modGroup] and [modVersion] respectively, the former of which is typical for Gradle buildscripts.
+     *
+     * Defaults to `true`.
+     */
+    val overwriteProjectVersionAndGroup: Property<Boolean>
 }
 open class MetadataBlockImpl @Inject constructor(objects: ObjectFactory) : MetadataBlock {
     /** Mods should use a `lower_snake_case` mod-id to obey the conventions of both mod loaders. */
@@ -79,4 +87,5 @@ open class MetadataBlockImpl @Inject constructor(objects: ObjectFactory) : Metad
     override val modAuthor = objects.property<String>().convention("")
     override val modCredits = objects.property<String>().convention("")
     override val replacementProperties = objects.mapProperty<String, String>().convention(emptyMap())
+    override val overwriteProjectVersionAndGroup = objects.property<Boolean>().convention(true)
 }

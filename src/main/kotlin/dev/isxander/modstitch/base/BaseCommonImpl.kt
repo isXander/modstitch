@@ -100,8 +100,10 @@ abstract class BaseCommonImpl<T : Any>(
      * @param target The target project.
      */
     protected open fun finalize(target: Project) {
-        target.group = target.modstitch.metadata.modGroup.get()
-        target.version = target.modstitch.metadata.modVersion.get()
+        if (target.modstitch.metadata.overwriteProjectVersionAndGroup.get()) {
+            target.group = target.modstitch.metadata.modGroup.get()
+            target.version = target.modstitch.metadata.modVersion.get()
+        }
 
         applyAccessWidener(target)
     }
