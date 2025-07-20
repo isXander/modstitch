@@ -189,7 +189,7 @@ class BaseModDevGradleImpl(
 
         // Generate mod metadata every project reload, instead of manually
         // (see `generateModMetadata` task in `common.gradle.kts`)
-        target.msModdevgradle.configureNeoforge {
+        target.msModdevgradle.configureNeoForge {
             ideSyncTask(generateModMetadata)
         }
 

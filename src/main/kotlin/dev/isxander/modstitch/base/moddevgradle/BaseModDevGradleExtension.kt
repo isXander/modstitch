@@ -18,53 +18,77 @@ import org.gradle.kotlin.dsl.*
 interface BaseModDevGradleExtension {
     /**
      * The version of NeoForge to use.
+     *
+     * This property is applicable on both `moddevgradle` and `moddevgradle-legacy` platforms.
      */
     val neoForgeVersion: Property<String>
 
     /**
      * The version of Forge to use.
+     *
+     * This property is applicable only on `moddevgradle-legacy` platform.
      */
     val forgeVersion: Property<String>
 
     /**
      * The version of NeoForm to use.
+     *
+     * This property is applicable only on `moddevgradle` platform.
      */
     val neoFormVersion: Property<String>
 
     /**
      * The version of MCP to use.
+     *
+     * This property is applicable only on `moddevgradle-legacy` platofmr.
      */
     val mcpVersion: Property<String>
 
     /**
      * The underlying platform-specific extension: `neoForge`
+     *
+     * Attempting to access this property on `moddevgradle-legacy` will throw an error as it is
+     * only valid on `moddevgradle` platform.
+     * Use [configureNeoForge] for conditional execution.
      */
-    val neoforgeExtension: ModDevExtension
+    val neoForgeExtension: ModDevExtension
+
     /**
-     * Configures the NeoForge extension.
-     * This action will only be executed if the current platform is ModDevGradle.
+     * Configures the underlying platform-specific extension `neoForge`.
+     *
+     * This action will only be executed on `moddevgradle` platform.
      */
-    fun configureNeoforge(action: Action<ModDevExtension>)
+    fun configureNeoForge(action: Action<ModDevExtension>)
 
     /**
      * The underlying platform-specific extension: `obfuscation`
-     * Accessing this property will throw an exception if the current platform is not ModDevGradle Legacy.
+     *
+     * Attempting to access this property on `moddevgradle` will throw an error as it is
+     * only valid on `moddevgradle-legacy` platform.
+     * Use [configureObfuscation] for conditional execution.
      */
     val obfuscationExtension: ObfuscationExtension
+
     /**
      * Configures the Obfuscation extension.
-     * This action will only be executed if the current platform is ModDevGradle Legacy.
+     *
+     * This action will only be executed on `moddevgradle-legacy` platform.
      */
     fun configureObfuscation(action: Action<ObfuscationExtension>)
 
     /**
      * The underlying platform-specific extension: `mixin`
-     * Accessing this property will throw an exception if the current platform is not ModDevGradle Legacy.
+     *
+     * Attempting to access this property on `moddevgradle` will throw an error as it is
+     * only valid on `moddevgradle-legacy` platform.
+     Use [configureMixin] for conditional execution.
      */
     val mixinExtension: MixinExtension
+
     /**
      * Configures the Mixin extension.
-     * This action will only be executed if the current platform is ModDevGradle Legacy.
+     *
+     * This action will only be executed on `moddevgradle-legacy` platform.
      */
     fun configureMixin(action: Action<MixinExtension>)
 
@@ -88,9 +112,9 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
     override val neoFormVersion: Property<String> = objects.property()
     override val mcpVersion: Property<String> = objects.property()
 
-    override val neoforgeExtension: ModDevExtension by ExtensionGetter(project)
-    override fun configureNeoforge(action: Action<ModDevExtension>) =
-        action(neoforgeExtension)
+    override val neoForgeExtension: ModDevExtension by ExtensionGetter(project)
+    override fun configureNeoForge(action: Action<ModDevExtension>) =
+        action(neoForgeExtension)
 
     override val mixinExtension: MixinExtension by ExtensionGetter(project)
     override fun configureMixin(action: Action<MixinExtension>) =
@@ -107,7 +131,7 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
             forgeVersion.isPresent -> "Forge"
             else -> "Minecraft"
         }
-        configureNeoforge {
+        configureNeoForge {
             runs {
                 fun registerOrConfigure(name: String, action: Action<RunModel>) = action(maybeCreate(name))
 
@@ -133,11 +157,11 @@ open class BaseModDevGradleExtensionDummy : BaseModDevGradleExtension {
     override val forgeVersion: Property<String> by NotExistsDelegate()
     override val neoFormVersion: Property<String> by NotExistsDelegate()
     override val mcpVersion: Property<String> by NotExistsDelegate()
-    override val neoforgeExtension: NeoForgeExtension by NotExistsDelegate()
+    override val neoForgeExtension: NeoForgeExtension by NotExistsDelegate()
     override val mixinExtension: MixinExtension by NotExistsDelegate()
     override val obfuscationExtension: ObfuscationExtension by NotExistsDelegate()
 
-    override fun configureNeoforge(action: Action<ModDevExtension>) {}
+    override fun configureNeoForge(action: Action<ModDevExtension>) {}
     override fun configureMixin(action: Action<MixinExtension>) {}
     override fun configureObfuscation(action: Action<ObfuscationExtension>) {}
     override fun defaultRuns(client: Boolean, server: Boolean, namingConvention: (String, String) -> String) {}
