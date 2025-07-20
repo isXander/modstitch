@@ -59,7 +59,7 @@ class BaseModDevGradleImpl(
         val moddev = target.extensions.getByType<ModDevExtension>()
         moddev.parchment.parchmentArtifact = modstitch.parchment.parchmentArtifact
         moddev.parchment.enabled = modstitch.parchment.enabled
-        moddev.runs.configureEach { logLevel = Level.DEBUG }
+        moddev.runs.configureEach { logLevel = Level.DEBUG } // recommended by NeoForge MDK
         moddev.mods.register("mod") { sourceSet(target.sourceSets["main"]) }
 
         target.configurations.create("localRuntime") localRuntime@{
