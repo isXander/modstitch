@@ -41,6 +41,14 @@ interface ModstitchExtension {
      * - Defaults to `16` if [minecraftVersion] >= `1.17`.
      * - Defaults to  `8` if [minecraftVersion] <= `1.16.5`.
      * - Has no default value if [minecraftVersion] denotes a snapshot version.
+     *
+     * Modstitch configures the java plugin's source and target versions. Expands to:
+     * ```kt
+     * java {
+     *     targetCompatibility = modstitch.javaVersion
+     *     sourceCompatibility = modstitch.javaVersion
+     * }
+     * ```
      */
     val javaVersion: Property<Int>
 
@@ -73,13 +81,21 @@ interface ModstitchExtension {
     /**
      * The access widener to be applied to the Minecraft source code.
      *
+     * Despite the name of this property, Modstitch supports both Fabric's Access Widener
+     * and (Neo)Forge's Access Transformer. Modstitch will automatically detect which you have
+     * specified and convert accordingly.
+     *
+     * It is recommended that you write your loader-agnostic access widener file in
+     * [Fabric's AW v1 format](https://wiki.fabricmc.net/tutorial:accesswideners)
+     * format, since it's the lowest common denominator: both ATs and AW(v2)s supports all of AW(v1)'s features.
+     *
      * By default, Modstitch looks for the following files (case-insensitive) in the specified order:
      * - `modstitch.accessWidener`
      * - `.accessWidener`
      * - `accesstransformer.cfg`
      *
-     * Files located in the root of the current project take precedence over
-     * those in the root of the root project, if one is present.
+     * Modstitch looks deeply within your Gradle project structure. It will first check
+     * within the root directory of this subproject, then the root directory of the parent project, and so on.
      */
     val accessWidener: RegularFileProperty
 
@@ -95,6 +111,7 @@ interface ModstitchExtension {
 
     /**
      * Indicates whether [accessWidener] should be validated.
+     *
      * Validation fails with a fatal error if any of the targeted members do not exist.
      * If the [accessWidener] is syntactically invalid, the build will fail regardless of the set value.
      *
@@ -130,8 +147,7 @@ interface ModstitchExtension {
      * additional logic when the dependency is NOT a mod, and some may require additional logic
      * when the dependency IS a mod.
      *
-     * This method is a shorthand for calling `createProxyConfigurations` on the configurations.
-     * It creates them for the following configurations:
+     * This method is a shorthand for calling `createProxyConfigurations` on the following configurations:
      * - `compileOnly` (`modstitchCompileOnly` and `modstitchModCompileOnly`)
      * - `implementation` (`modstitchImplementation` and `modstitchModImplementation`)
      * - `runtimeOnly` (`modstitchRuntimeOnly` and `modstitchModRuntimeOnly`)
