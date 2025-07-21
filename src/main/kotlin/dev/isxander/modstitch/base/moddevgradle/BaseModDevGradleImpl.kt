@@ -71,8 +71,8 @@ class BaseModDevGradleImpl(
         val obfuscation = target.extensions.findByType<ObfuscationExtension>()
         if (obfuscation != null) {
             // Proxy configurations will add remap configurations to this.
-            remapConfiguration = target.configurations.create("modstitchMdgRemap")
-            obfuscation.createRemappingConfiguration(remapConfiguration)
+            val parent = target.configurations.create("modstitchMdgRemap")
+            remapConfiguration = obfuscation.createRemappingConfiguration(parent)
         }
 
         val mixin = target.extensions.findByType<MixinExtension>()
