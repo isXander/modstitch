@@ -7,6 +7,8 @@ import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
 import dev.isxander.modstitch.util.addCamelCasePrefix
 import dev.isxander.modstitch.util.afterSuccessfulEvaluate
+import dev.isxander.modstitch.util.assignIfNotNull
+import dev.isxander.modstitch.util.deepGradleProperty
 import dev.isxander.modstitch.util.mainSourceSet
 import net.neoforged.moddevgradle.dsl.ModDevExtension
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
@@ -44,6 +46,7 @@ class BaseModDevGradleImpl(
 
     override fun apply(target: Project) {
         val ext = createRealPlatformExtension(target, type)!!
+
         super.apply(target)
 
         val modstitch = target.modstitch
@@ -182,6 +185,16 @@ class BaseModDevGradleImpl(
             MDGType.Regular -> "net.neoforged.moddev"
             MDGType.Legacy -> "net.neoforged.moddev.legacyforge"
         })
+    }
+
+    override fun applyGradleProperties(target: Project) {
+        super.applyGradleProperties(target)
+        target.modstitch.moddevgradle {
+            neoForgeVersion assignIfNotNull target.deepGradleProperty("modstitch.moddevgradle.neoForgeVersion")
+            forgeVersion assignIfNotNull target.deepGradleProperty("modstitch.moddevgradle.forgeVersion")
+            neoFormVersion assignIfNotNull target.deepGradleProperty("modstitch.moddevgradle.neoFormVersion")
+            mcpVersion assignIfNotNull target.deepGradleProperty("modstitch.moddevgradle.mcpVersion")
+        }
     }
 
     override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
