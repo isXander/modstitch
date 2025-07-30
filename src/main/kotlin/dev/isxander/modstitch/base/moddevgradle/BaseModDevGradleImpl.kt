@@ -132,7 +132,7 @@ class BaseModDevGradleImpl(
             dependsOn(createMinecraftMappings)
 
             accessWidener.set(modstitch.accessWidener)
-            mappings.set(namedToSrgMappings)
+            mappings.set(createMinecraftMappings.flatMap { it.namedToIntermediaryMappings })
             accessTransformer.set(generatedAccessTransformer)
         }
 
