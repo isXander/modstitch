@@ -24,3 +24,13 @@ jobs:
 
       - name: Run tests with Gradle
         run: ./gradlew test
+
+      - name: Publish Test Report
+        # The 'if: always()' condition ensures this step runs even if the test step fails.
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: build/test-results/test/*.xml
+          reporter: java-junit
+          fail-on-error: 'false'
