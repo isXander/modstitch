@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 
 class AccessWidenerTest {
     companion object {
-        internal fun sampleAW(format: AccessWidenerFormat): AccessWidener {
+        internal fun sampleAW(format: AccessWidenerFormat, namespace: String = "named"): AccessWidener {
             val at = format == AccessWidenerFormat.AT
             return AccessWidener(
                 format = format,
@@ -38,7 +38,8 @@ class AccessWidenerTest {
                         "fieldName",
                         if (at) "" else "Lfield/Type;"
                     )
-                )
+                ),
+                namespace = namespace
             )
         }
     }
