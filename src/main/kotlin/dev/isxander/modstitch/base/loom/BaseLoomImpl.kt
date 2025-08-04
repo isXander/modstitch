@@ -84,10 +84,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         }
 
         // If no access widener is specified, there's nothing else for us to do.
-        val accessWidenerFile = modstitch.accessWidener.orNull?.asFile
-        if (accessWidenerFile == null) {
-            return
-        }
+        val accessWidenerFile = modstitch.accessWidener.orNull?.asFile ?: return
 
         // Read the access widener from the specified path, convert it to the `accessWidener v2` format,
         // save it to a static location, and point Loom to it. If the specified file does not exist,
@@ -95,8 +92,30 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         //
         // Also note: we intentionally avoid using the user-provided name here to prevent leaving behind
         // stale cached files when the user changes the name of their access widener.
-        val accessWidener = accessWidenerFile.reader().use { AccessWidener.parse(it) }.convert(AccessWidenerFormat.AW_V2)
+        val generateAccessWidenerTask = target.tasks.register("generateAccessWidener") {
+            group = "modstitch/internal"
+            description = "Generates the access widener file for Loom"
+
+            inputs.file(accessWidenerFile)
+            val tmpAccessWidenerFile = target.layout.buildDirectory.file("modstitch/modstitch.accessWidener").get().asFile
+            outputs.file(tmpAccessWidenerFile)
+
+            doLast {
+                // Read the access widener from the specified path, convert it to the `accessWidener v2` format,
+                // save it to a static location. If the specified file does not exist,
+                // allow it to throw - we don't want to silently ignore a potential misconfiguration.
+                val accessWidener = accessWidenerFile.reader().use { AccessWidener.parse(it) }.convert(AccessWidenerFormat.AW_V2)
+                tmpAccessWidenerFile.parentFile.mkdirs()
+                tmpAccessWidenerFile.writer().use { accessWidener.write(it) }
+            }
+        }
+
+        // For Loom's configuration phase, we still need to provide the file path immediately
+        // Create the file during configuration for Loom, but ensure it gets regenerated properly at execution time
         val tmpAccessWidenerFile = target.layout.buildDirectory.file("modstitch/modstitch.accessWidener").get().asFile
+
+        // Generate the file immediately for Loom's configuration phase
+        val accessWidener = accessWidenerFile.reader().use { AccessWidener.parse(it) }.convert(AccessWidenerFormat.AW_V2)
         tmpAccessWidenerFile.parentFile.mkdirs()
         tmpAccessWidenerFile.writer().use { accessWidener.write(it) }
         loom.accessWidenerPath = tmpAccessWidenerFile
@@ -106,6 +125,7 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         val accessWidenerName = modstitch.accessWidenerName.convention(defaultAccessWidenerName).get()
         val accessWidenerPath = accessWidenerName.split('\\', '/')
         target.tasks.named<ProcessResources>("processResources") {
+            dependsOn(generateAccessWidenerTask)
             from(tmpAccessWidenerFile) {
                 rename { accessWidenerPath.last() }
                 into(accessWidenerPath.dropLast(1).joinToString("/"))
