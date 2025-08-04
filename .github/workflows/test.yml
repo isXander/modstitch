@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      checks: write # Required for the test reporter to post results
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
