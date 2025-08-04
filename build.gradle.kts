@@ -78,6 +78,17 @@ tasks.test {
     useJUnitPlatform {
         excludeTags("mdgl") // mdgl does not work without at least one mixin
     }
+
+    testLogging {
+        // Log all standard lifecycle events: PASSED, FAILED, SKIPPED
+        events("passed", "failed", "skipped")
+
+        // For failed tests, show the full stack trace
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+
+        // Show any output streams (println, etc.) from the tests
+        showStandardStreams = true
+    }
 }
 
 idea {
