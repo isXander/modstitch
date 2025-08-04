@@ -4,7 +4,6 @@ import dev.isxander.modstitch.unit.AccessWidenerTest
 import dev.isxander.modstitch.util.AccessWidener
 import dev.isxander.modstitch.util.AccessWidenerFormat
 import org.gradle.testkit.runner.TaskOutcome
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import java.io.File
 import java.util.jar.JarFile

@@ -146,10 +146,17 @@ abstract class BaseCommonImpl<T : Any>(
         }
 
         target.extensions.configure<JavaPluginExtension> {
-            target.afterEvaluate {
-                val javaVersion = JavaVersion.toVersion(target.modstitch.javaVersion.get())
-                targetCompatibility = javaVersion
-                sourceCompatibility = javaVersion
+            target.afterSuccessfulEvaluate {
+                val requestedJavaVersion = target.modstitch.javaVersion.orNull
+
+                if (requestedJavaVersion != null) {
+                    JavaVersion.toVersion(requestedJavaVersion).let {
+                        targetCompatibility = it
+                        sourceCompatibility = it
+                    }
+                } else {
+                    target.logger.warn("No Java version specified in modstitch configuration. Not applying any Java version settings.")
+                }
             }
         }
     }

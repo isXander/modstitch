@@ -47,7 +47,10 @@ abstract class BaseFunctionalTest {
             .build()
     }
 
-    protected fun setupMinimalLoom() {
+    protected fun setupMinimalLoom(
+        minecraftVersion: String = "1.21.8",
+        fabricLoaderVersion: String = "0.16.14"
+    ) {
         gradlePropertiesFile.appendText("modstitch.platform=loom\n")
 
         // language=kotlin
@@ -57,15 +60,19 @@ abstract class BaseFunctionalTest {
             }
             
             modstitch {
-                minecraftVersion = "1.21.8"
+                minecraftVersion = "$minecraftVersion"
                 loom {
-                    fabricLoaderVersion = "0.16.14"
+                    fabricLoaderVersion = "$fabricLoaderVersion"
                 }
             }
+            
         """.trimIndent())
     }
 
-    protected fun setupMinimalMdg() {
+    protected fun setupMinimalMdg(
+        minecraftVersion: String = "1.21.8",
+        neoForgeVersion: String = "21.8.26"
+    ) {
         gradlePropertiesFile.appendText("modstitch.platform=moddevgradle\n")
 
         // language=kotlin
@@ -75,15 +82,19 @@ abstract class BaseFunctionalTest {
             }
             
             modstitch {
-                minecraftVersion = "1.21.8"
+                minecraftVersion = "$minecraftVersion"
                 moddevgradle {
-                    neoForgeVersion = "21.8.26"
+                    neoForgeVersion = "$neoForgeVersion"
                 }
             }
+
         """.trimIndent())
     }
 
-    protected fun setupMinimalMdgl() {
+    protected fun setupMinimalMdgl(
+        minecraftVersion: String = "1.20.1",
+        forgeVersion: String = "1.20.1-47.4.6"
+    ) {
         gradlePropertiesFile.appendText("modstitch.platform=moddevgradle-legacy\n")
 
         // language=kotlin
@@ -93,11 +104,12 @@ abstract class BaseFunctionalTest {
             }
             
             modstitch {
-                minecraftVersion = "1.20.1"
+                minecraftVersion = "$minecraftVersion"
                 moddevgradle {
-                    forgeVersion = "1.20.1-47.4.6"
+                    forgeVersion = "$forgeVersion"
                 }
             }
+
         """.trimIndent())
     }
 }
