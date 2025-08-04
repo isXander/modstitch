@@ -13,7 +13,7 @@ import kotlin.math.min
  * @property entries The list of access modifications.
  * @property namespace The mapping namespace (e.g., "named", "intermediary").
  */
-internal class AccessWidener private constructor(
+internal data class AccessWidener(
     val format: AccessWidenerFormat,
     val entries: List<AccessWidenerEntry>,
     val namespace: String = "named",

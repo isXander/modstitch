@@ -4,7 +4,6 @@ package dev.isxander.modstitch.base.loom
  * The extension for configuring Fabric-specific settings.
  */
 
-import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.api.Action
@@ -38,7 +37,9 @@ open class BaseLoomExtensionImpl @Inject constructor(
 ) : BaseLoomExtension {
     override val fabricLoaderVersion: Property<String> = objects.property<String>()
 
-    override val loomExtension: LoomGradleExtensionAPI by ExtensionGetter(project)
+    override val loomExtension: LoomGradleExtensionAPI
+        get() = project.extensions.getByType<LoomGradleExtensionAPI>()
+
     override fun configureLoom(action: Action<LoomGradleExtensionAPI>) =
         action.execute(loomExtension)
 }

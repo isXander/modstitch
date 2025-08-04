@@ -188,25 +188,25 @@ abstract class BaseCommonImpl<T : Any>(
             )
 
             // Combine the lazy-valued base properties with the replacement properties, lazily
-            val allProperties = manifest.replacementProperties.map { replacementProperties ->
-                baseProperties.mapValues { (_, value) -> value.get() } + replacementProperties
-            }
-
-            // Lazily provide the inputs
-            inputs.property("allProperties", allProperties)
-
+            inputs.property(
+                "allProperties",
+                manifest.replacementProperties.map { replacementProperties ->
+                    baseProperties.mapValues { (_, value) -> value.get() } + replacementProperties
+                }
+            )
             // Expand lazily resolved properties only during execution
             doFirst {
-                val resourcedProperties = allProperties.get()
-                expand(resourcedProperties)
+                expand(inputs.properties["allProperties"] as Map<String, String>)
             }
 
             from(templates)
             into("build/generated/sources/modMetadata")
 
+            // Set the manifest as an input so configuration cache is happy and can detect changes
+            inputs.property("modLoaderManifest", modstitch.modLoaderManifest)
+            // Exclude all mod loader manifests except the one currently being processed
             exclude { fileTreeElement ->
-                // At execution time, modLoaderManifest should be resolvable
-                val currentManifest = modstitch.modLoaderManifest.orNull
+                val currentManifest = inputs.properties["modLoaderManifest"] as? String?
                 // Now build the set of manifests to exclude dynamically
                 val manifestsToExclude = Platform.allModManifests - currentManifest
                 // Return true if the file should be excluded, false otherwise

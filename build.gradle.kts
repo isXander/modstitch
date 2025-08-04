@@ -44,65 +44,46 @@ gradlePlugin {
 
 dependencies {
     fun plugin(id: String?, version: String? = null, prop: String? = null): String {
-        return listOfNotNull<String>(
+        return listOfNotNull(
             id?.let { "$it:$it.gradle.plugin" },
             version ?: prop?.let { findProperty(it)?.toString() },
         ).joinToString(separator = ":")
     }
-    fun pluginImplStrict(id: String, version: String? = null, prop: String? = null) {
-        implementation(plugin(id))
-        constraints {
-            implementation(plugin(id)) {
-                version {
-                    strictly(plugin(null, version, prop))
-                }
-            }
-        }
-    }
 
     // Gradle Plugins
-    pluginImplStrict("fabric-loom", prop = "deps.loom")
-
-    pluginImplStrict("net.neoforged.moddev", prop = "deps.moddevgradle")
-
-    pluginImplStrict("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle")
-
-    pluginImplStrict("me.modmuss50.mod-publish-plugin", prop = "deps.mpp")
-
-    pluginImplStrict("com.gradleup.shadow", prop = "deps.shadow")
+    implementation(plugin("fabric-loom", prop = "deps.loom"))
+    implementation(plugin("net.neoforged.moddev", prop = "deps.moddevgradle"))
+    implementation(plugin("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle"))
+    implementation(plugin("me.modmuss50.mod-publish-plugin", prop = "deps.mpp"))
+    implementation(plugin("com.gradleup.shadow", prop = "deps.shadow"))
 
     // Libraries used within the plugin
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.electronwill.night-config:toml:3.8.1")
     implementation("org.semver4j:semver4j:5.5.0")
+
+
+    // Libraries used for testing
+    testImplementation(gradleTestKit())
+    testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    testImplementation(kotlin("test-junit5"))
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.jar {
     manifest.attributes["Implementation-Version"] = project.version
 }
 
+tasks.test {
+    useJUnitPlatform {
+        excludeTags("mdgl") // mdgl does not work without at least one mixin
+    }
+}
+
 idea {
     module {
         isDownloadJavadoc = true
         isDownloadSources = true
-    }
-}
-
-publishing {
-    repositories {
-        val username = "XANDER_MAVEN_USER".let { System.getenv(it) ?: findProperty(it) }?.toString()
-        val password = "XANDER_MAVEN_PASS".let { System.getenv(it) ?: findProperty(it) }?.toString()
-        if (username != null && password != null) {
-            maven(url = "https://maven.isxander.dev/releases") {
-                name = "XanderReleases"
-                credentials {
-                    this.username = username
-                    this.password = password
-                }
-            }
-        } else {
-            println("Xander Maven credentials not satisfied.")
-        }
     }
 }
 

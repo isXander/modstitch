@@ -3,13 +3,13 @@ package dev.isxander.modstitch.base
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectContainer
 
-sealed interface FutureNamedDomainObjectProvider<T> {
+sealed interface FutureNamedDomainObjectProvider<T : Any> {
     val name: String
 
     fun get(): T
 
     companion object {
-        fun <T> from(container: NamedDomainObjectContainer<T>, name: String): FutureNamedDomainObjectProvider<T> {
+        fun <T : Any> from(container: NamedDomainObjectContainer<T>, name: String): FutureNamedDomainObjectProvider<T> {
             return FutureNamedDomainObjectProviderImpl(container, name)
         }
 
@@ -19,7 +19,7 @@ sealed interface FutureNamedDomainObjectProvider<T> {
     }
 }
 
-class FutureNamedDomainObjectProviderImpl<T>(
+class FutureNamedDomainObjectProviderImpl<T : Any>(
     private val container: NamedDomainObjectContainer<T>,
     override val name: String
 ) : FutureNamedDomainObjectProvider<T> {

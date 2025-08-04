@@ -1,7 +1,6 @@
 package dev.isxander.modstitch.publishing
 
 import dev.isxander.modstitch.base.extensions.modstitch
-import dev.isxander.modstitch.util.ExtensionGetter
 import me.modmuss50.mpp.ModPublishExtension
 import org.gradle.api.Action
 import org.gradle.api.DomainObjectSet
@@ -54,8 +53,10 @@ open class PublishingExtensionImpl @Inject constructor(objects: ObjectFactory, p
     override val mavenArtifact = objects.property<String>().convention(project.provider { project.modstitch.metadata.modId.map { it.replace('_', '-') } }.flatMap { it })
     override val additionalArtifacts = objects.domainObjectSet(Any::class)
 
-    override val mpp: ModPublishExtension by ExtensionGetter(project)
-    override val maven: MavenPublishingExtension by ExtensionGetter(project)
+    override val mpp: ModPublishExtension
+        get() = project.extensions.getByType<ModPublishExtension>()
+    override val maven: MavenPublishingExtension
+        get() = project.extensions.getByType<MavenPublishingExtension>()
 }
 
 val Project.msPublishing: PublishingExtension

@@ -27,14 +27,3 @@ class NotExistsNullableDelegate<T> : ReadWriteProperty<Any, T?> {
         error("Property ${property.name} does not exist")
     }
 }
-
-class ExtensionGetter<T : Any>(
-    @Transient private val container: ExtensionAware,
-    private val extensionType: Class<T>
-) : ReadOnlyProperty<Any, T> {
-    override fun getValue(thisRef: Any, property: KProperty<*>): T {
-        return container.extensions.getByType(extensionType)
-    }
-}
-inline fun <reified T : Any> ExtensionGetter(container: ExtensionAware) =
-    ExtensionGetter(container, T::class.java)

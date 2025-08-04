@@ -1,7 +1,6 @@
 package dev.isxander.modstitch.base.moddevgradle
 
 import dev.isxander.modstitch.base.extensions.modstitch
-import dev.isxander.modstitch.util.ExtensionGetter
 import dev.isxander.modstitch.util.NotExistsDelegate
 import net.neoforged.moddevgradle.dsl.ModDevExtension
 import org.gradle.api.Action
@@ -112,15 +111,20 @@ open class BaseModDevGradleExtensionImpl @Inject constructor(
     override val neoFormVersion: Property<String> = objects.property()
     override val mcpVersion: Property<String> = objects.property()
 
-    override val neoForgeExtension: ModDevExtension by ExtensionGetter(project)
+    override val neoForgeExtension: ModDevExtension
+        get() = project.extensions.getByType<ModDevExtension>()
     override fun configureNeoForge(action: Action<ModDevExtension>) =
         action(neoForgeExtension)
 
-    override val mixinExtension: MixinExtension by ExtensionGetter(project)
+    override val mixinExtension: MixinExtension
+        get() = if (type == MDGType.Legacy) project.extensions.getByType<MixinExtension>()
+        else error("Mixin extension is not available on moddevgradle platform")
     override fun configureMixin(action: Action<MixinExtension>) =
         if (type == MDGType.Legacy) action(mixinExtension) else {}
 
-    override val obfuscationExtension: ObfuscationExtension by ExtensionGetter(project)
+    override val obfuscationExtension: ObfuscationExtension
+        get() = if (type == MDGType.Legacy) project.extensions.getByType<ObfuscationExtension>()
+        else error("Obfuscation extension is not available on moddevgradle platform")
     override fun configureObfuscation(action: Action<ObfuscationExtension>) =
         if (type == MDGType.Legacy) action(obfuscationExtension) else {}
 
