@@ -14,6 +14,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 import javax.inject.Inject
@@ -118,6 +119,17 @@ interface ModstitchExtension {
      * Defaults to `false`.
      */
     val validateAccessWidener: Property<Boolean>
+
+    /**
+     * Configures JUnit testing that includes the Minecraft sources.
+     */
+    fun unitTesting(testFrameworkConfigure: Action<in JUnitPlatformOptions>)
+
+    /**
+     * Configures JUnit testing that includes the Minecraft sources.
+     */
+    fun unitTesting(testFrameworkConfigure: JUnitPlatformOptions.() -> Unit = {}) =
+        unitTesting(Action { testFrameworkConfigure() })
 
     /**
      * The mod loader manifest to use.
@@ -240,6 +252,10 @@ open class ModstitchExtensionImpl @Inject constructor(
     override val accessWidenerName = objects.property<String>()
 
     override val validateAccessWidener = objects.property<Boolean>().convention(false)
+
+    override fun unitTesting(testFrameworkConfigure: Action<in JUnitPlatformOptions>) {
+        plugin.applyUnitTesting(project, testFrameworkConfigure)
+    }
 
     override val modLoaderManifest = objects.property<String>()
 
