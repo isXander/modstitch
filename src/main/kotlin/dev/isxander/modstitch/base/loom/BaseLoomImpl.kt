@@ -26,9 +26,9 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
     )
 
     override fun apply(target: Project) {
-        super.apply(target)
-
         val fabricExt = createRealPlatformExtension(target)!!
+
+        super.apply(target)
 
         target.dependencies {
             "minecraft"(target.modstitch.minecraftVersion.map { "com.mojang:minecraft:$it" })
@@ -141,6 +141,13 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
     override fun applyDefaultRepositories(repositories: RepositoryHandler) {
         super.applyDefaultRepositories(repositories)
         repositories.maven("https://maven.fabricmc.net") { name = "FabricMC" }
+    }
+
+    override fun applyGradleProperties(target: Project) {
+        super.applyGradleProperties(target)
+        target.modstitch.loom {
+            fabricLoaderVersion assignIfNotNull target.deepGradleProperty("modstitch.loom.fabricLoaderVersion")
+        }
     }
 
     override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {

@@ -4,6 +4,9 @@ import dev.isxander.modstitch.*
 import dev.isxander.modstitch.base.extensions.*
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.afterSuccessfulEvaluate
+import dev.isxander.modstitch.util.assignIfNotNull
+import dev.isxander.modstitch.util.deepGradleProperty
+import dev.isxander.modstitch.util.gradleProperty
 import dev.isxander.modstitch.util.mainSourceSet
 import dev.isxander.modstitch.util.platform
 import dev.isxander.modstitch.util.printVersion
@@ -36,9 +39,6 @@ abstract class BaseCommonImpl<T : Any>(
         // Set the property for use elsewhere
         target.platform = platform
 
-        // Apply the necessary plugins
-        applyPlugins(target)
-
         // Create our plugin extension
         val msExt = target.extensions.create(
             ModstitchExtension::class.java,
@@ -46,6 +46,11 @@ abstract class BaseCommonImpl<T : Any>(
             ModstitchExtensionImpl::class.java,
             this
         )
+
+        applyGradleProperties(target)
+
+        // Apply the necessary plugins
+        applyPlugins(target)
 
         // Ensure the archivesBaseName is our mod-id
         target.pluginManager.withPlugin("base") {
@@ -159,6 +164,35 @@ abstract class BaseCommonImpl<T : Any>(
                 }
             }
         }
+    }
+
+    /**
+     * Applies from gradle.properties to a bunch of extension defaults.
+     * Executed before the user can touch the extensions so they can safely change all of this.
+     */
+    protected open fun applyGradleProperties(target: Project) {
+        val modstitch = target.modstitch
+        modstitch.modLoaderVersion assignIfNotNull target.deepGradleProperty("modstitch.modLoaderVersion")
+        modstitch.minecraftVersion assignIfNotNull target.deepGradleProperty("modstitch.minecraftVersion")
+        modstitch.javaVersion assignIfNotNull target.deepGradleProperty("modstitch.javaVersion")?.toIntOrNull()
+        modstitch.parchment.minecraftVersion assignIfNotNull target.deepGradleProperty("modstitch.parchment.minecraftVersion")
+        modstitch.parchment.mappingsVersion assignIfNotNull target.deepGradleProperty("modstitch.parchment.mappingsVersion")
+        modstitch.parchment.parchmentArtifact assignIfNotNull target.deepGradleProperty("modstitch.parchment.parchmentArtifact")
+        modstitch.parchment.enabled assignIfNotNull target.deepGradleProperty("modstitch.parchment.enabled")?.toBooleanStrictOrNull()
+        modstitch.metadata.modId assignIfNotNull target.deepGradleProperty("modstitch.metadata.modId")
+        modstitch.metadata.modName assignIfNotNull target.deepGradleProperty("modstitch.metadata.modName")
+        modstitch.metadata.modVersion assignIfNotNull target.deepGradleProperty("modstitch.metadata.modVersion")
+        modstitch.metadata.modDescription assignIfNotNull target.deepGradleProperty("modstitch.metadata.modDescription")
+        modstitch.metadata.modLicense assignIfNotNull target.deepGradleProperty("modstitch.metadata.modLicense")
+        modstitch.metadata.modGroup assignIfNotNull target.deepGradleProperty("modstitch.metadata.modGroup")
+        modstitch.metadata.modAuthor assignIfNotNull target.deepGradleProperty("modstitch.metadata.modAuthor")
+        modstitch.metadata.modCredits assignIfNotNull target.deepGradleProperty("modstitch.metadata.modCredits")
+        modstitch.metadata.overwriteProjectVersionAndGroup assignIfNotNull target.deepGradleProperty("modstitch.metadata.overwriteProjectVersionAndGroup")?.toBooleanStrictOrNull()
+        modstitch.mixin.addMixinsToModManifest assignIfNotNull target.deepGradleProperty("modstitch.mixin.addMixinsToModManifest")?.toBooleanStrictOrNull()
+        modstitch.accessWidener assignIfNotNull target.deepGradleProperty("modstitch.accessWidener") { v, p -> p.file(v) }
+        modstitch.accessWidenerName assignIfNotNull target.deepGradleProperty("modstitch.accessWidenerName")
+        modstitch.validateAccessWidener assignIfNotNull target.deepGradleProperty("modstitch.validateAccessWidener")?.toBooleanStrictOrNull()
+        modstitch.modLoaderManifest assignIfNotNull target.deepGradleProperty("modstitch.modLoaderManifest")
     }
 
     /**

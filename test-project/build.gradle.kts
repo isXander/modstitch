@@ -1,29 +1,6 @@
 modstitch {
-    minecraftVersion = findProperty("minecraftVersion") as String?
-    javaVersion = 17
-
-    loom {
-        fabricLoaderVersion = findProperty("fabricLoaderVersion") as String?
-    }
-
-    moddevgradle {
-        neoForgeVersion = findProperty("neoForgeVersion") as String?
-        forgeVersion = findProperty("forgeVersion") as String?
-        mcpVersion = findProperty("mcpVersion") as String?
-        neoFormVersion = findProperty("neoFormVersion") as String?
-    }
-
     println(modLoaderManifest.getOrElse("'modLoaderManifest' is not set."))
     println(javaVersion.map { "Java version: $it" }.getOrElse("'javaVersion' is not set."))
-
-    metadata {
-        modId = "test_project"
-        modGroup = "dev.isxander"
-        modVersion = "1.0.0"
-        modLicense = "ARR"
-        modName = "Test Project"
-        modDescription = "A test project for ModStitch"
-    }
 
     moddevgradle {
         defaultRuns()
@@ -31,8 +8,6 @@ modstitch {
 
     mixin {
         configs.create("test")
-
-        addMixinsToModManifest = true
     }
 }
 
