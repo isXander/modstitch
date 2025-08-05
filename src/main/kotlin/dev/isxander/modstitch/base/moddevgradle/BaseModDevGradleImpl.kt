@@ -19,9 +19,12 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.kotlin.dsl.*
 import org.gradle.kotlin.dsl.assign
 import org.gradle.language.jvm.tasks.ProcessResources
+import org.gradle.testing.base.TestingExtension
 import org.semver4j.Semver
 import org.slf4j.event.Level
 import kotlin.collections.dropLast
@@ -143,6 +146,31 @@ class BaseModDevGradleImpl(
             from(generatedAccessTransformers) {
                 rename { accessWidenerPath.get().last() }
                 into(accessWidenerPath.map { it.dropLast(1).joinToString("/") })
+            }
+        }
+    }
+
+    override fun applyUnitTesting(target: Project, testFrameworkConfigure: Action<in JUnitPlatformOptions>) {
+        if (type == MDGType.Legacy) {
+            throw UnsupportedOperationException("Unit testing is not supported on moddevgradle-legacy platform.")
+        }
+
+        target.modstitch.onEnable {
+            target.dependencies {
+                "testImplementation"(platform("org.junit:junit-bom:5.13.4"))
+                "testImplementation"("org.junit.jupiter:junit-jupiter")
+                "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+            }
+
+            target.tasks.named<Test>("test") {
+                useJUnitPlatform(testFrameworkConfigure)
+            }
+
+            target.extensions.getByType<NeoForgeExtension>().apply {
+                unitTest {
+                    enable()
+                    testedMod = mods["mod"]
+                }
             }
         }
     }

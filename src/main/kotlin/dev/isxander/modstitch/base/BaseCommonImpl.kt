@@ -19,6 +19,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.ide.idea.model.IdeaModel
@@ -160,6 +161,8 @@ abstract class BaseCommonImpl<T : Any>(
             }
         }
     }
+
+    abstract fun applyUnitTesting(target: Project, testFrameworkConfigure: Action<in JUnitPlatformOptions>)
 
     /**
      * Ensures templates in files like fabric.mod.json are replaced.

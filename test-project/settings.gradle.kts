@@ -19,5 +19,5 @@ fun createVersion(name: String) {
 
 createVersion("fabric")
 createVersion("neoforge")
-createVersion("forge")
+//createVersion("forge")
 //createVersion("vanilla")

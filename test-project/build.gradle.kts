@@ -1,6 +1,8 @@
 modstitch {
     minecraftVersion = findProperty("minecraftVersion") as String?
-    javaVersion = 17
+    javaVersion = 21
+
+    unitTesting()
 
     loom {
         fabricLoaderVersion = findProperty("fabricLoaderVersion") as String?

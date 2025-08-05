@@ -6,11 +6,14 @@ import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.*
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.util.Constants
+import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 
@@ -151,6 +154,18 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         }
 
         return generateModMetadata
+    }
+
+    override fun applyUnitTesting(target: Project, testFrameworkConfigure: Action<in JUnitPlatformOptions>) {
+        val fabricExt = target.extensions.getByType<BaseLoomExtension>()
+
+        target.tasks.named<Test>("test") {
+            useJUnitPlatform(testFrameworkConfigure);
+        }
+
+        target.dependencies {
+            "testImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader-junit:$it" })
+        }
     }
 
     override fun createProxyConfigurations(target: Project, sourceSet: SourceSet) {
