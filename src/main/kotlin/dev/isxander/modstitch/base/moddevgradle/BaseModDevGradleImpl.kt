@@ -5,9 +5,13 @@ import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
 import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
+import dev.isxander.modstitch.util.ReleaseVersion
+import dev.isxander.modstitch.util.Side
+import dev.isxander.modstitch.util.SnapshotVersion
 import dev.isxander.modstitch.util.addCamelCasePrefix
 import dev.isxander.modstitch.util.afterSuccessfulEvaluate
 import dev.isxander.modstitch.util.mainSourceSet
+import dev.isxander.modstitch.util.zip
 import net.neoforged.moddevgradle.dsl.ModDevExtension
 import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import net.neoforged.moddevgradle.legacyforge.dsl.LegacyForgeExtension
@@ -82,6 +86,8 @@ class BaseModDevGradleImpl(
         if (mixin != null) {
             configureLegacyMixin(target, mixin)
         }
+
+        applyRuns(target)
     }
 
     override fun finalize(target: Project) {
@@ -175,6 +181,51 @@ class BaseModDevGradleImpl(
         }
     }
 
+    private fun applyRuns(target: Project) {
+        val supportsSidedDatagen = target.modstitch.minecraftVersion.map { v ->
+            ReleaseVersion.parseOrNull(v)?.let {
+                return@map it >= ReleaseVersion(1, 21, 4)
+            }
+            SnapshotVersion.parseOrNull(v)?.let {
+                return@map it >= SnapshotVersion(24, 45, 'a')
+            }
+            return@map false
+        }.orElse(false)
+
+        target.modstitch.runs.whenObjectAdded modstitch@{
+            val modstitch = this@modstitch
+            target.extensions.getByType<ModDevExtension>().runs.register(modstitch.name) moddev@{
+                val moddev = this@moddev
+                moddev.gameDirectory = modstitch.gameDirectory
+                moddev.mainClass = modstitch.mainClass
+                moddev.jvmArguments = modstitch.jvmArgs
+                moddev.programArguments = modstitch.programArgs
+                moddev.environment = modstitch.environmentVariables
+                moddev.ideName = modstitch.ideRunName
+                    .zip(modstitch.ideRun) { name, enabled -> name to enabled }
+                    .filter { (_, enabled) -> enabled }
+                    .map { (name, _) -> name }
+                moddev.sourceSet = modstitch.sourceSet.convention(target.mainSourceSet)
+                moddev.type = zip(modstitch.side, modstitch.datagen, supportsSidedDatagen) { side, datagen, sidedDatagen ->
+                    if (datagen && !sidedDatagen) {
+                        return@zip "data"
+                    }
+                    return@zip when (side) {
+                        Side.Client -> if (datagen) "clientData" else "client"
+                        Side.Server -> if (datagen) "serverData" else "server"
+                        else -> error("Unknown side: $side")
+                    }
+                }
+            }
+
+            target.modstitch.onEnable {
+                target.tasks.named("run${modstitch.name.replaceFirstChar { it.uppercaseChar() }}") {
+                    group = "modstitch/runs"
+                }
+            }
+        }
+    }
+
     /**
      * Enables the underlying [ModDevExtension].
      *
@@ -193,8 +244,8 @@ class BaseModDevGradleImpl(
         neoForge?.enable {
             version = moddev.neoForgeVersion.orNull
             neoFormVersion = moddev.neoFormVersion.orNull
-            moddev.forgeVersion.map { error("Property 'forgeVersion' does not exist.") }.orNull
-            moddev.mcpVersion.map { error("Property 'mcpVersion' does not exist.") }.orNull
+            moddev.forgeVersion.map<Nothing> { error("Property 'forgeVersion' does not exist.") }.orNull
+            moddev.mcpVersion.map<Nothing> { error("Property 'mcpVersion' does not exist.") }.orNull
         }
         legacyForge?.enable {
             forgeVersion = moddev.forgeVersion.orNull

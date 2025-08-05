@@ -5,6 +5,7 @@ import dev.isxander.modstitch.base.loom.BaseLoomExtension
 import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtension
 import dev.isxander.modstitch.util.*
 import org.gradle.api.Action
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.RegularFileProperty
@@ -78,6 +79,9 @@ interface ModstitchExtension {
      */
     val mixin: MixinBlock
     fun mixin(action: Action<MixinBlock>) = action.execute(mixin)
+
+    val runs: NamedDomainObjectContainer<RunConfig>
+    fun runs(action: Action<NamedDomainObjectContainer<RunConfig>>) = action.execute(runs)
 
     /**
      * The access widener to be applied to the Minecraft source code.
@@ -227,10 +231,16 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val javaVersion = objects.property<Int>().convention(minecraftVersion.map { v ->
         // https://minecraft.wiki/w/Tutorial:Update_Java
-        ReleaseVersion.parseOrNull(v)?.let { when {
+        ReleaseVersion.parseOrNull(v)?.let { return@map when {
             it >= ReleaseVersion(1, 20, 5) -> 21
             it >= ReleaseVersion(1, 18, 0) -> 17
             it >= ReleaseVersion(1, 17, 0) -> 16
+            else -> 8
+        }}
+        SnapshotVersion.parseOrNull(v)?.let { return@map when {
+            it >= SnapshotVersion(24, 14, 'a') -> 21
+            it >= SnapshotVersion(21, 44, 'a') -> 17
+            it >= SnapshotVersion(21, 19, 'a') -> 16
             else -> 8
         }}
     })
@@ -241,6 +251,8 @@ open class ModstitchExtensionImpl @Inject constructor(
     override val metadata = objects.newInstance<MetadataBlockImpl>(objects)
 
     override val mixin = objects.newInstance<MixinBlockImpl>(objects)
+
+    override val runs = objects.domainObjectContainer(RunConfig::class)
 
     override val accessWidener = objects.fileProperty().convention(project.layout.file(project.provider {
         val fileNames = listOf("modstitch.accessWidener", ".accessWidener", "accesstransformer.cfg")

@@ -6,15 +6,20 @@ import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.*
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.util.Constants
+import net.neoforged.moddevgradle.dsl.ModDevExtension
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
+import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.assign
+import org.gradle.kotlin.dsl.getByType
 import org.gradle.language.jvm.tasks.ProcessResources
 
 class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
@@ -71,6 +76,8 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
             target.sourceSets["main"],
             target.modstitch.metadata.modId.map { "$it.refmap.json" },
         )
+
+        applyRuns(target)
     }
 
     override fun applyAccessWidener(target: Project) {
@@ -132,6 +139,40 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
             from(tmpAccessWidenerFile) {
                 rename { accessWidenerPath.last() }
                 into(accessWidenerPath.dropLast(1).joinToString("/"))
+            }
+        }
+    }
+
+    private fun applyRuns(target: Project) {
+        target.modstitch.runs.whenObjectAdded modstitch@{
+            val modstitch = this@modstitch
+
+            // loom run configs does not support gradle lazy evaluation
+            target.afterSuccessfulEvaluate {
+                target.extensions.getByType<LoomGradleExtensionAPI>().runs.register(modstitch.name) loom@{
+                    val loom = this@loom
+
+                    modstitch.gameDirectory.orNull?.let { loom.runDir = it.asFile.absolutePath }
+                    modstitch.mainClass.orNull?.let { loom.mainClass = it }
+                    modstitch.jvmArgs.orNull?.let { loom.vmArgs.addAll(it) }
+                    modstitch.programArgs.orNull?.let { loom.programArgs.addAll(it) }
+                    modstitch.environmentVariables.orNull?.let { loom.environmentVariables.putAll(it) }
+                    modstitch.ideRunName.orNull?.let { loom.configName = it }
+                    modstitch.ideRun.orNull?.let { loom.isIdeConfigGenerated = it }
+                    modstitch.sourceSet.orNull?.let { loom.source(it) }
+                    modstitch.side.orNull?.let {
+                        when (it) {
+                            Side.Client -> loom.client()
+                            Side.Server -> loom.server()
+                            else -> error("Unknown side: $side")
+                        }
+                    }
+                    modstitch.datagen.orNull?.let { if (it) throw UnsupportedOperationException("Loom platform does not currently support creating datagen run configs") }
+                }
+
+                target.tasks.named("run${modstitch.name.replaceFirstChar { it.uppercaseChar() }}") {
+                    group = "modstitch/runs"
+                }
             }
         }
     }

@@ -2,6 +2,7 @@ package dev.isxander.modstitch.util
 
 import org.gradle.api.Action
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 
@@ -32,4 +33,11 @@ internal fun Project.afterSuccessfulEvaluate(action: Action<Project>) = project.
     if (state.failure == null) {
         action.execute(this)
     }
+}
+
+/**
+ * Zips three [Provider]s together, rather than the usual two.
+ */
+internal fun <A, B, C, T> zip(a: Provider<A>, b: Provider<B>, c: Provider<C>, combiner: (A, B, C) -> T): Provider<T> {
+    return a.zip(b) { av, bv -> av to bv }.zip(c) { (av, bv), cv -> combiner(av, bv, cv) }
 }

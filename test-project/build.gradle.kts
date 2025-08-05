@@ -15,6 +15,12 @@ modstitch {
         neoFormVersion = findProperty("neoFormVersion") as String?
     }
 
+    runs {
+        register("funny") {
+            client()
+        }
+    }
+
     println(modLoaderManifest.getOrElse("'modLoaderManifest' is not set."))
     println(javaVersion.map { "Java version: $it" }.getOrElse("'javaVersion' is not set."))
 

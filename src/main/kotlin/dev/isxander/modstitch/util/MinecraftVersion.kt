@@ -41,3 +41,23 @@ internal data class ReleaseVersion(val major: Int, val minor: Int, val patch: In
             PATTERN.find(value)?.groupValues?.map { it.toIntOrNull() ?: 0 }?.let { ReleaseVersion(it[1], it[2], it[3]) }
     }
 }
+
+internal data class SnapshotVersion(val year: Int, val week: Int, val patch: Int) : Comparable<SnapshotVersion> {
+    constructor(year: Int, week: Int, patch: Char) : this(year, week, charToPatch(patch))
+
+    override fun compareTo(other: SnapshotVersion): Int =
+        compareValuesBy(this, other, SnapshotVersion::year, SnapshotVersion::week, SnapshotVersion::patch)
+
+    override fun toString(): String = "${year}w$week${patchToChar(patch)}"
+
+    companion object {
+        private val PATTERN = Regex("^(\\d{2})w(\\d{2})([a-z])")
+
+        private fun charToPatch(c: Char): Int = c - 'a'
+        private fun patchToChar(patch: Int): Char = 'a' + patch
+
+        fun parseOrNull(value: CharSequence): SnapshotVersion? =
+            PATTERN.find(value)?.groupValues
+                ?.let { SnapshotVersion(it[1].toIntOrNull() ?: 0, it[2].toIntOrNull() ?: 0, charToPatch(it[3][0])) }
+    }
+}

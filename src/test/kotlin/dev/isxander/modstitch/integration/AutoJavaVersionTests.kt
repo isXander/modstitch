@@ -46,11 +46,9 @@ class AutoJavaVersionTests : BaseFunctionalTest() {
     }
 
     @Test @Tag("loom")
-    fun `auto java version loom snapshot`() {
+    fun `auto java version loom 25w31a`() {
         setupMinimalLoom(minecraftVersion = "25w31a")
-
-        val result = testJavaVersion("null")
-        assertTrue(result.output.contains("No Java version specified in modstitch configuration"))
+        testJavaVersion("21")
     }
 
     private fun testJavaVersion(expected: String): BuildResult {
