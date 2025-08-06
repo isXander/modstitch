@@ -5,12 +5,13 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+    types: [ opened, synchronize, reopened ]
 
 jobs:
-  test:
+  # Job 1: Build the code and run tests
+  # This job runs in the context of the pull request and has read-only permissions.
+  build-and-test:
     runs-on: ubuntu-latest
-    permissions:
-      checks: write # Required for the test reporter to post results
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,17 +23,44 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Run tests with Gradle
+        # The 'continue-on-error' flag ensures that the workflow proceeds to the
+        # artifact upload step even if the tests fail.
+        continue-on-error: true
         run: ./gradlew test
 
-      - name: Publish Test Report
-        # The 'if: always()' condition ensures this step runs even if the test step fails.
+      - name: Upload test results
+        # This step always runs to ensure the report is available for the next job.
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/test-results/test/*.xml
+          retention-days: 1
+
+  # Job 2: Publish the test report
+  # This job runs in the context of the base repository
+  # and has the necessary write permissions to create a check run.
+  report-tests:
+    # It requires the 'build-and-test' job to complete first.
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      # This grants the job permission to post check runs.
+      checks: write
+    steps:
+      - name: Download test results
+        uses: actions/download-artifact@v5
+        with:
+          name: test-results
+
+      - name: Publish Test Report
+        uses: dorny/test-reporter@v2
         with:
           name: Test Results
-          path: build/test-results/test/*.xml
+          # The path now points to the XML files downloaded by the artifact step.
+          path: '*.xml'
           reporter: java-junit
           fail-on-error: 'false'
