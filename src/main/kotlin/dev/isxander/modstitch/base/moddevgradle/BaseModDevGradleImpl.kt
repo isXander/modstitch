@@ -348,9 +348,10 @@ class BaseModDevGradleImpl(
             mixin.add(target.sourceSets[this@obj.sourceSetName.get()], this@obj.refmapName.get())
         }
         stitchedMixin.configs.whenObjectAdded obj@{ mixin.configs.add(this@obj.config) }
-        stitchedMixin.registerSourceSet(target.mainSourceSet!!, modstitch.metadata.modId.map { "$it.refmap.json" })
 
         target.afterEvaluate {
+            stitchedMixin.registerSourceSet(target.mainSourceSet!!, modstitch.metadata.modId.map { "$it.refmap.json" })
+
             modstitch.namedJarTask {
                 manifest.attributes["MixinConfigs"] = stitchedMixin.configs.joinToString(",") { it.config.get() }
             }

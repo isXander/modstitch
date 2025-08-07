@@ -51,6 +51,9 @@ jobs:
       # This grants the job permission to post check runs.
       checks: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download test results
         uses: actions/download-artifact@v5
         with:
