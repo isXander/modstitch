@@ -6,13 +6,10 @@ import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.util.*
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.util.Constants
-import net.neoforged.moddevgradle.dsl.ModDevExtension
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
-import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.testing.Test
@@ -22,8 +19,10 @@ import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.language.jvm.tasks.ProcessResources
 
-class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
-    Platform.Loom,
+class BaseLoomImpl(
+    private val type: LoomType,
+) : BaseCommonImpl<BaseLoomExtension>(
+    type.platform,
     AppendFabricMetadataTask::class.java,
 ) {
     override val platformExtensionInfo = PlatformExtensionInfo(
@@ -41,24 +40,29 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
         target.dependencies {
             "minecraft"(target.modstitch.minecraftVersion.map { "com.mojang:minecraft:$it" })
 
-            val parchment = target.modstitch.parchment
-            val loom = fabricExt.loomExtension
-            "mappings"(parchment.enabled.zip(parchment.parchmentArtifact.orElse("")) { enabled, parchmentArtifact ->
-                loom.layered {
-                    officialMojangMappings()
-                    if (enabled && parchmentArtifact.isNotEmpty()) {
-                        parchment(parchmentArtifact)
+            if (type == LoomType.Remap) {
+                val parchment = target.modstitch.parchment
+                val loom = fabricExt.loomExtension
+                "mappings"(parchment.enabled.zip(parchment.parchmentArtifact.orElse("")) { enabled, parchmentArtifact ->
+                    loom.layered {
+                        officialMojangMappings()
+                        if (enabled && parchmentArtifact.isNotEmpty()) {
+                            parchment(parchmentArtifact)
+                        }
                     }
-                }
-            })
+                })
+            }
 
-            "modImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader:$it" })
+            "modstitchModImplementation"(fabricExt.fabricLoaderVersion.map { "net.fabricmc:fabric-loader:$it" })
         }
 
         target.modstitch.modLoaderManifest.convention(Platform.Loom.modManifest)
 
-        target.modstitch._finalJarTaskName = "remapJar"
         target.modstitch._namedJarTaskName = "jar"
+        target.modstitch._finalJarTaskName = when (type) {
+            LoomType.NoRemap -> "jar"
+            LoomType.Remap -> "remapJar"
+        }
 
         target.loom.mixin {
             target.modstitch.mixin.mixinSourceSets.whenObjectAdded {
@@ -179,7 +183,10 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
 
     override fun applyPlugins(target: Project) {
         super.applyPlugins(target)
-        target.plugins.apply("fabric-loom")
+        when (type) {
+            LoomType.NoRemap -> target.plugins.apply("net.fabricmc.fabric-loom")
+            LoomType.Remap -> target.plugins.apply("net.fabricmc.fabric-loom-remap")
+        }
     }
 
     override fun applyDefaultRepositories(repositories: RepositoryHandler) {
@@ -222,15 +229,21 @@ class BaseLoomImpl : BaseCommonImpl<BaseLoomExtension>(
     override fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean) {
         if (defer) error("Cannot defer proxy configuration creation in Loom")
 
-        val remapConfiguration = target.loom.remapConfigurations
-            .find { it.targetConfigurationName.get() == configuration.name }
-            ?: error("Loom has not created a remap configuration for ${configuration.name}, modstitch cannot proxy it.")
+        // for no-remap, this "remap configuration" is just the regular configuration
+        // since there is no such remap configuration to proxy to.
+        val remapConfigurationName = when (type) {
+            LoomType.Remap -> target.loom.remapConfigurations
+                .find { it.targetConfigurationName.get() == configuration.name }
+                ?.name
+                ?: error("Loom has not created a remap configuration for ${configuration.name}, modstitch cannot proxy it.")
+            LoomType.NoRemap -> configuration.name
+        }
 
         val proxyModConfigurationName = configuration.name.addCamelCasePrefix("modstitchMod")
         val proxyRegularConfigurationName = configuration.name.addCamelCasePrefix("modstitch")
 
         target.configurations.create(proxyModConfigurationName) proxy@{
-            target.configurations.named(remapConfiguration.name) {
+            target.configurations.named(remapConfigurationName) {
                 extendsFrom(this@proxy)
             }
         }

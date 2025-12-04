@@ -17,7 +17,7 @@ fun createVersion(name: String) {
     project.buildFileName = "../build.gradle.kts"
 }
 
-createVersion("fabric")
+createVersion("fabric-old")
 createVersion("neoforge")
 //createVersion("forge")
 //createVersion("vanilla")

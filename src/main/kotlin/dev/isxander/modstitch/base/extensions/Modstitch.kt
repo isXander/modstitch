@@ -222,7 +222,7 @@ open class ModstitchExtensionImpl @Inject constructor(
 ) : ModstitchExtension {
     // General setup for the mod environment.
     override val modLoaderVersion: Property<String> get() = when (plugin.platform) {
-        Platform.Loom -> project.extensions.getByType<BaseLoomExtension>().fabricLoaderVersion
+        Platform.Loom, Platform.LoomRemap -> project.extensions.getByType<BaseLoomExtension>().fabricLoaderVersion
         Platform.MDG -> project.extensions.getByType<BaseModDevGradleExtension>().neoForgeVersion
         Platform.MDGLegacy -> project.extensions.getByType<BaseModDevGradleExtension>().forgeVersion
     }

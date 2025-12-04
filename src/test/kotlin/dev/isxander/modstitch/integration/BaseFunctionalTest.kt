@@ -48,10 +48,32 @@ abstract class BaseFunctionalTest {
     }
 
     protected fun setupMinimalLoom(
+        minecraftVersion: String = "1.21.11-rc1",
+        fabricLoaderVersion: String = "0.18.1"
+    ) {
+        gradlePropertiesFile.appendText("modstitch.platform=fabric-loom\n")
+
+        // language=kotlin
+        buildFile.appendText("""
+            plugins {
+                id("dev.isxander.modstitch.base")
+            }
+            
+            modstitch {
+                minecraftVersion = "$minecraftVersion"
+                loom {
+                    fabricLoaderVersion = "$fabricLoaderVersion"
+                }
+            }
+            
+        """.trimIndent())
+    }
+
+    protected fun setupMinimalLoomRemap(
         minecraftVersion: String = "1.21.8",
         fabricLoaderVersion: String = "0.16.14"
     ) {
-        gradlePropertiesFile.appendText("modstitch.platform=loom\n")
+        gradlePropertiesFile.appendText("modstitch.platform=fabric-loom-remap\n")
 
         // language=kotlin
         buildFile.appendText("""

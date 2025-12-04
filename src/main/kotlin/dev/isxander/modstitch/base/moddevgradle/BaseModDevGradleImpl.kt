@@ -35,7 +35,7 @@ import kotlin.collections.dropLast
 import kotlin.collections.last
 
 class BaseModDevGradleImpl(
-    private val type: MDGType
+    private val type: MDGType,
 ) : BaseCommonImpl<BaseModDevGradleExtension>(
     type.platform,
     AppendNeoForgeMetadataTask::class.java,

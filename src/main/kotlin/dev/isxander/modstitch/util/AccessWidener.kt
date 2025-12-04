@@ -11,7 +11,7 @@ import kotlin.math.min
  *
  * @property format The format of the access widener.
  * @property entries The list of access modifications.
- * @property namespace The mapping namespace (e.g., "named", "intermediary").
+ * @property namespace The mapping namespace (e.g., "named", "intermediary", "official").
  */
 internal data class AccessWidener(
     val format: AccessWidenerFormat,
