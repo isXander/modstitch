@@ -26,6 +26,11 @@ internal fun LineNumberReader.readUncommentedLine(): CharSequence? {
     }
 }
 
+internal fun CharSequence.removeComment(): CharSequence {
+    val j = indexOf('#')
+    return if (j < 0) this else subSequence(0, j)
+}
+
 /**
  * Throws a [FormatException] with the given [message].
  *

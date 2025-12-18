@@ -91,7 +91,7 @@ abstract class BaseCommonImpl<T : Any>(
 
             source(msExt.modLoaderManifest.map { listOf(project.mainSourceSet!!.output.resourcesDir!!.resolve(it)) }.orElse(listOf()))
             mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } }.zip(msExt.mixin.addMixinsToModManifest) { configs, addToManifest -> if (!addToManifest) emptyList() else configs })
-            accessWideners.value(msExt.accessWidenerName.zip(msExt.accessWidener) { n, _ -> listOf(n) }.orElse(listOf()))
+            classTweakers.value(msExt.classTweakerName.zip(msExt.classTweaker) { n, _ -> listOf(n) }.orElse(listOf()))
         }.also { target.tasks["processResources"].finalizedBy(it) }
     }
 
@@ -106,15 +106,15 @@ abstract class BaseCommonImpl<T : Any>(
             target.version = target.modstitch.metadata.modVersion.get()
         }
 
-        applyAccessWidener(target)
+        applyClassTweaker(target)
     }
 
     /**
-     * Applies the access widener configuration to the specified [target] project.
+     * Applies the class tweaker configuration to the specified [target] project.
      *
      * @param target The target project.
      */
-    protected abstract fun applyAccessWidener(target: Project)
+    protected abstract fun applyClassTweaker(target: Project)
 
     /**
      * Add all repositories necessary for the platform in here.

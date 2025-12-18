@@ -15,13 +15,13 @@ abstract class AppendFabricMetadataTask : AppendModMetadataTask() {
         val gson = GsonBuilder().setPrettyPrinting().create()
         val json = file.reader().use { gson.fromJson(it, JsonObject::class.java) }
 
-        val accessWidener = accessWideners.get().let { if (it.isEmpty()) null else it.single() }
-        val existingAccessWidener = json["accessWidener"]?.asString
-        if (existingAccessWidener != null && existingAccessWidener != accessWidener) {
-            error("An access widener has already been specified: '$existingAccessWidener'.")
+        val classTweaker = classTweakers.get().let { if (it.isEmpty()) null else it.single() }
+        val existingClassTweaker = json["classTweaker"]?.asString
+        if (existingClassTweaker != null && existingClassTweaker != classTweaker) {
+            error("A class tweaker has already been specified: '$existingClassTweaker'.")
         }
-        if (accessWidener != null) {
-            json.addProperty("accessWidener", accessWidener)
+        if (classTweaker != null) {
+            json.addProperty("classTweaker", classTweaker)
         }
 
         val mixinConfigs = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }

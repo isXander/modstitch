@@ -12,6 +12,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
@@ -34,6 +35,12 @@ interface ModstitchExtension {
      * The version of Minecraft to target by this build.
      */
     val minecraftVersion: Property<String>
+
+    /**
+     * Indicates whether the assigned [minecraftVersion] is an unobfuscated version.
+     * This is unable to detect the special unobfuscated aside versions published before `26.1-snapshot-1`
+     */
+    val isUnobfuscated: Provider<Boolean>
 
     /**
      * The Java version to target.
@@ -84,45 +91,45 @@ interface ModstitchExtension {
     fun runs(action: Action<NamedDomainObjectContainer<RunConfig>>) = action.execute(runs)
 
     /**
-     * The access widener to be applied to the Minecraft source code.
+     * The class tweaker to be applied to the Minecraft source code.
      *
-     * Despite the name of this property, Modstitch supports both Fabric's Access Widener
+     * Despite the name of this property, Modstitch supports both Fabric's Access Widener / Class Tweaker
      * and (Neo)Forge's Access Transformer. Modstitch will automatically detect which you have
      * specified and convert accordingly.
      *
-     * It is recommended that you write your loader-agnostic access widener file in
+     * It is recommended that you write your loader-agnostic class tweaker file in
      * [Fabric's AW v1 format](https://wiki.fabricmc.net/tutorial:accesswideners)
-     * format, since it's the lowest common denominator: both ATs and AW(v2)s supports all of AW(v1)'s features.
+     * format, since it's the lowest common denominator: both ATs and AW(v2) and CTs supports all of AW(v1)'s features.
      *
      * By default, Modstitch looks for the following files (case-insensitive) in the specified order:
-     * - `modstitch.accessWidener`
-     * - `.accessWidener`
+     * - `modstitch.ct`
+     * - `.classTweaker`
      * - `accesstransformer.cfg`
      *
      * Modstitch looks deeply within your Gradle project structure. It will first check
      * within the root directory of this subproject, then the root directory of the parent project, and so on.
      */
-    val accessWidener: RegularFileProperty
+    val classTweaker: RegularFileProperty
 
     /**
-     * The path, relative to the root of resulting JAR's resources, where [accessWidener] will be copied.
+     * The path, relative to the root of resulting JAR's resources, where [classTweaker] will be copied.
      *
-     * - On Loom, this defaults to `${metadata.modId}.accessWidener`.
+     * - On Loom, this defaults to `${metadata.modId}.ct`.
      * - On ModDevGradle, this defaults to `META-INF/accesstransformer.cfg`.
      *
      * In most cases you don't need to change this value.
      */
-    val accessWidenerName: Property<String>
+    val classTweakerName: Property<String>
 
     /**
-     * Indicates whether [accessWidener] should be validated.
+     * Indicates whether [classTweaker] should be validated.
      *
      * Validation fails with a fatal error if any of the targeted members do not exist.
-     * If the [accessWidener] is syntactically invalid, the build will fail regardless of the set value.
+     * If the [classTweaker] is syntactically invalid, the build will fail regardless of the set value.
      *
      * Defaults to `false`.
      */
-    val validateAccessWidener: Property<Boolean>
+    val validateClassTweaker: Property<Boolean>
 
     /**
      * Configures JUnit testing that includes the Minecraft sources.
@@ -229,18 +236,23 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val minecraftVersion = objects.property<String>()
 
+    override val isUnobfuscated = minecraftVersion.map { v ->
+        MinecraftVersion.parseOrderableOrNull(v) is MinecraftVersion.Unobfuscated
+    }
+
     override val javaVersion = objects.property<Int>().convention(minecraftVersion.map { v ->
         // https://minecraft.wiki/w/Tutorial:Update_Java
-        ReleaseVersion.parseOrNull(v)?.let { return@map when {
-            it >= ReleaseVersion(1, 20, 5) -> 21
-            it >= ReleaseVersion(1, 18, 0) -> 17
-            it >= ReleaseVersion(1, 17, 0) -> 16
+        MinecraftVersion.parseOrderableOrNull(v)?.let { return@map when {
+            it >= minecraftVersion("26.1-snapshot-1") -> 25
+            it >= minecraftVersion("1.20.5") -> 21
+            it >= minecraftVersion("1.18") -> 17
+            it >= minecraftVersion("1.17") -> 16
             else -> 8
         }}
-        SnapshotVersion.parseOrNull(v)?.let { return@map when {
-            it >= SnapshotVersion(24, 14, 'a') -> 21
-            it >= SnapshotVersion(21, 44, 'a') -> 17
-            it >= SnapshotVersion(21, 19, 'a') -> 16
+        MinecraftVersion.parseLegacySnapshotOrNull(v)?.let { return@map when {
+            it >= minecraftLegacySnapshot("24w14a") -> 21
+            it >= minecraftLegacySnapshot("21w44a") -> 17
+            it >= minecraftLegacySnapshot("21w19a") -> 16
             else -> 8
         }}
     })
@@ -254,16 +266,16 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override val runs = objects.domainObjectContainer(RunConfig::class)
 
-    override val accessWidener = objects.fileProperty().convention(project.layout.file(project.provider {
-        val fileNames = listOf("modstitch.accessWidener", ".accessWidener", "accesstransformer.cfg")
+    override val classTweaker = objects.fileProperty().convention(project.layout.file(project.provider {
+        val fileNames = listOf("modstitch.ct", ".classTweaker", "accesstransformer.cfg")
         project.projectChain.flatMap { p -> fileNames.map { p.projectDir to it } }.firstNotNullOfOrNull {
             it.first.listFiles().firstOrNull { f -> it.second.equals(f.name, ignoreCase = true) }?.absoluteFile
         }
     }))
 
-    override val accessWidenerName = objects.property<String>()
+    override val classTweakerName = objects.property<String>()
 
-    override val validateAccessWidener = objects.property<Boolean>().convention(false)
+    override val validateClassTweaker = objects.property<Boolean>().convention(false)
 
     override fun unitTesting(testFrameworkConfigure: Action<in JUnitPlatformOptions>) {
         plugin.applyUnitTesting(project, testFrameworkConfigure)

@@ -3,11 +3,10 @@ package dev.isxander.modstitch.base.moddevgradle
 import dev.isxander.modstitch.base.BaseCommonImpl
 import dev.isxander.modstitch.base.FutureNamedDomainObjectProvider
 import dev.isxander.modstitch.base.extensions.modstitch
+import dev.isxander.modstitch.util.MinecraftVersion
 import dev.isxander.modstitch.util.Platform
 import dev.isxander.modstitch.util.PlatformExtensionInfo
-import dev.isxander.modstitch.util.ReleaseVersion
 import dev.isxander.modstitch.util.Side
-import dev.isxander.modstitch.util.SnapshotVersion
 import dev.isxander.modstitch.util.addCamelCasePrefix
 import dev.isxander.modstitch.util.afterSuccessfulEvaluate
 import dev.isxander.modstitch.util.mainSourceSet
@@ -28,7 +27,6 @@ import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.kotlin.dsl.*
 import org.gradle.kotlin.dsl.assign
 import org.gradle.language.jvm.tasks.ProcessResources
-import org.gradle.testing.base.TestingExtension
 import org.semver4j.Semver
 import org.slf4j.event.Level
 import kotlin.collections.dropLast
@@ -95,7 +93,7 @@ class BaseModDevGradleImpl(
         super.finalize(target)
     }
 
-    override fun applyAccessWidener(target: Project) {
+    override fun applyClassTweaker(target: Project) {
         val modstitch = target.modstitch
         val moddev = target.extensions.getByType<ModDevExtension>()
         val obf = target.extensions.findByType<ObfuscationExtension>()
@@ -103,21 +101,21 @@ class BaseModDevGradleImpl(
         @Suppress("UnstableApiUsage") val srgToNamedMappings = obf?.srgToNamedMappings ?: target.provider { null }
 
         val defaultAccessTransformerName = "META-INF/accesstransformer.cfg"
-        val generatedAccessTransformer = target.layout.buildDirectory.file("modstitch/$defaultAccessTransformerName").zip(modstitch.accessWidener) { x, _ -> x }
+        val generatedAccessTransformer = target.layout.buildDirectory.file("modstitch/$defaultAccessTransformerName").zip(modstitch.classTweaker) { x, _ -> x }
         val generatedAccessTransformers = generatedAccessTransformer.map { listOf(it) }.orElse(listOf())
-        val accessWidenerName = modstitch.accessWidenerName.convention(defaultAccessTransformerName).map { when {
+        val classTweakerName = modstitch.classTweakerName.convention(defaultAccessTransformerName).map { when {
             type == MDGType.Regular || it == defaultAccessTransformerName -> it
             else -> error("Forge does not support custom access transformer paths.")
         }}
-        val accessWidenerPath = accessWidenerName.map { it.split('\\', '/') }
+        val classTweakerPath = classTweakerName.map { it.split('\\', '/') }
 
         // Finalize our properties so that no further changes can be made to them after they've been read.
-        modstitch.accessWidener.finalizeValueOnRead()
-        modstitch.accessWidenerName.finalizeValueOnRead()
-        modstitch.validateAccessWidener.finalizeValueOnRead()
+        modstitch.classTweaker.finalizeValueOnRead()
+        modstitch.classTweakerName.finalizeValueOnRead()
+        modstitch.validateClassTweaker.finalizeValueOnRead()
 
         // Wire MDG to use our properties.
-        moddev.validateAccessTransformers = modstitch.validateAccessWidener
+        moddev.validateAccessTransformers = modstitch.validateClassTweaker
         moddev.accessTransformers.from(generatedAccessTransformers)
 
         val createMinecraftArtifacts = target.tasks.getByName<CreateMinecraftArtifacts>("createMinecraftArtifacts")
@@ -140,7 +138,7 @@ class BaseModDevGradleImpl(
             description = "Generates an access transformer."
             dependsOn(createMinecraftMappings)
 
-            accessWidener.set(modstitch.accessWidener)
+            classTweaker.set(modstitch.classTweaker)
             mappings.set(createMinecraftMappings.flatMap { it.namedToIntermediaryMappings })
             accessTransformer.set(generatedAccessTransformer)
         }
@@ -150,8 +148,8 @@ class BaseModDevGradleImpl(
         target.tasks.named<ProcessResources>("processResources") {
             dependsOn(generateAccessTransformer)
             from(generatedAccessTransformers) {
-                rename { accessWidenerPath.get().last() }
-                into(accessWidenerPath.map { it.dropLast(1).joinToString("/") })
+                rename { classTweakerPath.get().last() }
+                into(classTweakerPath.map { it.dropLast(1).joinToString("/") })
             }
         }
     }
@@ -183,11 +181,11 @@ class BaseModDevGradleImpl(
 
     private fun applyRuns(target: Project) {
         val supportsSidedDatagen = target.modstitch.minecraftVersion.map { v ->
-            ReleaseVersion.parseOrNull(v)?.let {
-                return@map it >= ReleaseVersion(1, 21, 4)
+            MinecraftVersion.parseOrderableOrNull(v)?.let {
+                return@map it >= MinecraftVersion.LegacyRelease(21, 4)
             }
-            SnapshotVersion.parseOrNull(v)?.let {
-                return@map it >= SnapshotVersion(24, 45, 'a')
+            MinecraftVersion.parseLegacySnapshotOrNull(v)?.let {
+                return@map it >= MinecraftVersion.LegacySnapshot(24, 45, 0)
             }
             return@map false
         }.orElse(false)

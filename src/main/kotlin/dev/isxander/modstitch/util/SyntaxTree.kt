@@ -13,15 +13,22 @@ class MappedSyntaxNodeType<I, O>(private val nodeType: SyntaxNodeType<I>, privat
 fun <I, O> SyntaxNodeType<I>.map(mapper: (I) -> O?): SyntaxNodeType<O> =
     MappedSyntaxNodeType(this, mapper)
 
-class KeywordSyntaxNodeType(val keyword: String) : SyntaxNodeType<Unit> {
+class LiteralSyntaxNodeType(val literal: String) : SyntaxNodeType<Unit> {
     override fun tryParse(string: String): Unit? {
-        if (string == keyword) return Unit
+        if (string == literal) return Unit
         return null
+    }
+}
+
+object StringNodeType : SyntaxNodeType<String> {
+    override fun tryParse(string: String): String {
+        return string
     }
 }
 
 interface SyntaxTree<R : Any> {
     fun parse(words: List<String>): R?
+    fun parse(vararg words: String): R? = parse(words.toList())
 
     /**
      * Throws a syntax error with the given reason.
@@ -39,6 +46,16 @@ interface SyntaxTree<R : Any> {
     operator fun <T : Any> SyntaxNodeType<T>.invoke(block: SyntaxSubTree<T, R>.(T) -> Unit): Branch<T, R> {
         return Branch(this, block)
     }
+
+    operator fun String.invoke(block: SyntaxSubTree<Unit, R>.() -> Unit): Branch<Unit, R> {
+        return Branch(LiteralSyntaxNodeType(this)) { block() }
+    }
+
+    fun literal(string: String) = LiteralSyntaxNodeType(string)
+    fun word() = StringNodeType
+    fun wordMap(mapper: (String) -> R?) = word().map(mapper)
+    fun <T> enum(values: Array<T>) = word().map { str -> values.find { it.toString() == str } }
+    fun integer() = word().map { str -> str.toIntOrNull() }
 }
 
 /**
@@ -173,4 +190,5 @@ class SyntaxTreeRoot<R : Any> : SyntaxTree<R> {
         return null
     }
 }
+
 

@@ -84,65 +84,65 @@ class BaseLoomImpl(
         applyRuns(target)
     }
 
-    override fun applyAccessWidener(target: Project) {
+    override fun applyClassTweaker(target: Project) {
         // (Un)fortunately, Loom doesn't fully utilize Gradle's task system and performs much of its logic
-        // during the configuration phase - including applying an access widener to the Minecraft sources.
+        // during the configuration phase - including applying a class tweaker to the Minecraft sources.
         // Thus, we need to generate it eagerly, right here and right now.
         val modstitch = target.modstitch
         val loom = target.loom
 
-        // Loom doesn't offer a way to configure whether access widener validation should be enabled.
+        // Loom doesn't offer a way to configure whether class tweaker validation should be enabled.
         // Fortunately, it uses a separate task for this purpose, so we can simply disable it when needed.
-        if (!modstitch.validateAccessWidener.get()) {
+        if (!modstitch.validateClassTweaker.get()) {
             target.tasks["validateAccessWidener"].enabled = false
         }
 
-        // If no access widener is specified, there's nothing else for us to do.
-        val accessWidenerFile = modstitch.accessWidener.orNull?.asFile ?: return
+        // If no class tweaker is specified, there's nothing else for us to do.
+        val classTweakerFile = modstitch.classTweaker.orNull?.asFile ?: return
 
-        // Read the access widener from the specified path, convert it to the `accessWidener v2` format,
+        // Read the class tweaker from the specified path, convert it to the `classTweaker v1` format,
         // save it to a static location, and point Loom to it. If the specified file does not exist,
         // allow it to throw - we don't want to silently ignore a potential misconfiguration.
         //
         // Also note: we intentionally avoid using the user-provided name here to prevent leaving behind
-        // stale cached files when the user changes the name of their access widener.
-        val generateAccessWidenerTask = target.tasks.register("generateAccessWidener") {
+        // stale cached files when the user changes the name of their class tweaker.
+        val generateClassTweakerTask = target.tasks.register("generateClassTweaker") {
             group = "modstitch/internal"
-            description = "Generates the access widener file for Loom"
+            description = "Generates the class tweaker file for Loom"
 
-            inputs.file(accessWidenerFile)
-            val tmpAccessWidenerFile = target.layout.buildDirectory.file("modstitch/modstitch.accessWidener").get().asFile
-            outputs.file(tmpAccessWidenerFile)
+            inputs.file(classTweakerFile)
+            val tmpClassTweakerFile = target.layout.buildDirectory.file("modstitch/modstitch.ct").get().asFile
+            outputs.file(tmpClassTweakerFile)
 
             doLast {
-                // Read the access widener from the specified path, convert it to the `accessWidener v2` format,
+                // Read the class tweaker from the specified path, convert it to the `classTweaker v1` format,
                 // save it to a static location. If the specified file does not exist,
                 // allow it to throw - we don't want to silently ignore a potential misconfiguration.
-                val accessWidener = accessWidenerFile.reader().use { AccessWidener.parse(it) }.convert(AccessWidenerFormat.AW_V2)
-                tmpAccessWidenerFile.parentFile.mkdirs()
-                tmpAccessWidenerFile.writer().use { accessWidener.write(it) }
+                val classTweaker = classTweakerFile.reader().use { ClassTweaker.parse(it) }.convertFormat(ClassTweakerFormat.CT)
+                tmpClassTweakerFile.parentFile.mkdirs()
+                tmpClassTweakerFile.writer().use { classTweaker.write(it) }
             }
         }
 
         // For Loom's configuration phase, we still need to provide the file path immediately
         // Create the file during configuration for Loom, but ensure it gets regenerated properly at execution time
-        val tmpAccessWidenerFile = target.layout.buildDirectory.file("modstitch/modstitch.accessWidener").get().asFile
+        val tmpClassTweakerFile = target.layout.buildDirectory.file("modstitch/modstitch.ct").get().asFile
 
         // Generate the file immediately for Loom's configuration phase
-        val accessWidener = accessWidenerFile.reader().use { AccessWidener.parse(it) }.convert(AccessWidenerFormat.AW_V2)
-        tmpAccessWidenerFile.parentFile.mkdirs()
-        tmpAccessWidenerFile.writer().use { accessWidener.write(it) }
-        loom.accessWidenerPath = tmpAccessWidenerFile
+        val classTweaker = classTweakerFile.reader().use { ClassTweaker.parse(it) }.convertFormat(ClassTweakerFormat.CT)
+        tmpClassTweakerFile.parentFile.mkdirs()
+        tmpClassTweakerFile.writer().use { classTweaker.write(it) }
+        loom.accessWidenerPath = tmpClassTweakerFile
 
-        // Finally, include the generated access widener in the final JAR.
-        val defaultAccessWidenerName = modstitch.metadata.modId.map { "$it.accessWidener" }
-        val accessWidenerName = modstitch.accessWidenerName.convention(defaultAccessWidenerName).get()
-        val accessWidenerPath = accessWidenerName.split('\\', '/')
+        // Finally, include the generated class tweaker in the final JAR.
+        val defaultClassTweakerName = modstitch.metadata.modId.map { "$it.ct" }
+        val classTweakerName = modstitch.classTweakerName.convention(defaultClassTweakerName).get()
+        val classTweakerPath = classTweakerName.split('\\', '/')
         target.tasks.named<ProcessResources>("processResources") {
-            dependsOn(generateAccessWidenerTask)
-            from(tmpAccessWidenerFile) {
-                rename { accessWidenerPath.last() }
-                into(accessWidenerPath.dropLast(1).joinToString("/"))
+            dependsOn(generateClassTweakerTask)
+            from(tmpClassTweakerFile) {
+                rename { classTweakerPath.last() }
+                into(classTweakerPath.dropLast(1).joinToString("/"))
             }
         }
     }

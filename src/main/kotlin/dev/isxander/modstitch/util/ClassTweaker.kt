@@ -2,6 +2,8 @@ package dev.isxander.modstitch.util
 
 import java.io.LineNumberReader
 import java.io.Reader
+import java.io.StringWriter
+import java.io.Writer
 import kotlin.math.min
 
 internal data class ClassTweaker(
@@ -10,20 +12,152 @@ internal data class ClassTweaker(
     val namespace: ClassTweakerNamespace
 ) {
     /**
-     * Converts this access widener to the specified format.
+     * Converts this class tweaker to the specified format.
      *
      * @param targetFormat The desired format to convert to.
-     * @return A new [AccessWidener] in the target format.
+     * @return A new [ClassTweaker] in the target format.
      * @throws IllegalStateException If this instance uses a feature unsupported by the target format.
      */
-    fun convert(targetFormat: ClassTweakerFormat): ClassTweaker {
+    fun convertFormat(targetFormat: ClassTweakerFormat): ClassTweaker {
         targetFormat.validateCapabilities(this)
         return ClassTweaker(targetFormat, entries, namespace)
     }
 
+    fun convertNamespace(targetNamespace: ClassTweakerNamespace): ClassTweaker {
+        return ClassTweaker(format, entries, targetNamespace)
+    }
+
+    fun remap(mappings: Reader, targetNamespace: ClassTweakerNamespace): ClassTweaker {
+        val op = MappingOperation<MutableList<ClassTweakerEntry>>()
+        for (entry in entries) {
+            when (entry) {
+                is ClassTweakerEntry.AccessModifier.Class -> op.remapClass(entry.className) { acc, cls ->
+                    acc.also { acc.add(ClassTweakerEntry.AccessModifier.Class(entry.modification, entry.transitive, entry.final, cls) ) }
+                }
+                is ClassTweakerEntry.AccessModifier.Method -> op.remapMember(entry.className, entry.methodName, entry.methodDescriptor) { acc, cls, name, desc ->
+                    acc.also { acc.add(ClassTweakerEntry.AccessModifier.Method(entry.modification, entry.transitive, entry.final, cls, name, desc) ) }
+                }
+                is ClassTweakerEntry.AccessModifier.Field if entry.fieldDescriptor != null -> op.remapMember(entry.className, entry.fieldName, entry.fieldDescriptor) { acc, cls, name, desc ->
+                    acc.also { acc.add(ClassTweakerEntry.AccessModifier.Field(entry.modification, entry.transitive, entry.final, cls, name, desc) ) }
+                }
+                is ClassTweakerEntry.AccessModifier.Field -> op.remapField(entry.className, entry.fieldName) { acc, cls, name ->
+                    acc.also { acc.add(ClassTweakerEntry.AccessModifier.Field(entry.modification, entry.transitive, entry.final, cls, name, null) ) }
+                }
+                // FIXME: interface injections require two separate classes to be remapped but these operations do not support that.
+                is ClassTweakerEntry.InjectInterface -> error("Cannot yet remap interface injections")
+            }
+        }
+
+        val remappedEntries = op.loadMappings(mappings).apply(mutableListOf())
+        return ClassTweaker(format, remappedEntries, targetNamespace)
+    }
+
+    fun write(writer: Writer) {
+        when (format) {
+            ClassTweakerFormat.AT -> writeAT(writer)
+            ClassTweakerFormat.CT, ClassTweakerFormat.AW_V1, ClassTweakerFormat.AW_V2 -> writeCTAW(writer)
+        }
+    }
+
+    private fun writeAT(writer: Writer) {
+        for (entry in entries) {
+            when (entry) {
+                is ClassTweakerEntry.AccessModifier -> {
+                    writer.append(when (entry.modification) {
+                        ClassTweakerEntry.AccessModifier.Modification.Protected -> "protected"
+                        ClassTweakerEntry.AccessModifier.Modification.Default -> "default"
+                        ClassTweakerEntry.AccessModifier.Modification.Private -> "private"
+                        else -> "public"
+                    }).append(when (entry.final) {
+                        true -> "+f"
+                        false -> "-f"
+                        null -> ""
+                    }).append(' ')
+
+                    // AT uses dots instead of slashes here (and only here!) for some reason.
+                    for (c in entry.className) {
+                        writer.append(if (c == '/') '.' else c)
+                    }
+
+                    when (entry) {
+                        is ClassTweakerEntry.AccessModifier.Class -> writer.appendLine()
+                        is ClassTweakerEntry.AccessModifier.Field -> writer
+                            .append(' ')
+                            .append(entry.fieldName)
+                            .append(' ')
+                            .appendLine(entry.fieldDescriptor ?: "")
+                        is ClassTweakerEntry.AccessModifier.Method -> writer
+                            .append(' ')
+                            .append(entry.methodName)
+                            .append(' ')
+                            .appendLine(entry.methodDescriptor)
+                    }
+                }
+
+                is ClassTweakerEntry.InjectInterface -> error("Unsupported entry type for AT format")
+            }
+        }
+    }
+
+    private fun writeCTAW(writer: Writer) {
+        writer.append(when (format) {
+            ClassTweakerFormat.AW_V1 -> "accessWidener v1 "
+            ClassTweakerFormat.AW_V2 -> "accessWidener v2 "
+            ClassTweakerFormat.CT -> "classTweaker v1 "
+            else -> error("Unsupported format for CT/AW writing: $format")
+        }).appendLine(when (namespace) {
+            ClassTweakerNamespace.Official -> "official"
+            ClassTweakerNamespace.Named -> "named"
+            ClassTweakerNamespace.Intermediary -> "intermediary"
+        })
+
+        for (entry in entries) {
+            when (entry) {
+                is ClassTweakerEntry.AccessModifier -> {
+                    fun writeEntry(modifier: String) {
+                        if (entry.transitive) {
+                            writer.write("transitive-")
+                        }
+                        writer.append(modifier).append(' ')
+
+                        writer.appendLine(when (entry) {
+                            is ClassTweakerEntry.AccessModifier.Class -> "class ${entry.className}"
+                            is ClassTweakerEntry.AccessModifier.Method -> "method ${entry.className} ${entry.methodName} ${entry.methodDescriptor}"
+                            is ClassTweakerEntry.AccessModifier.Field -> "field ${entry.className} ${entry.fieldName} ${entry.fieldDescriptor}"
+                        })
+                    }
+
+                    if (entry.final == false) {
+                        writeEntry(if (entry is ClassTweakerEntry.AccessModifier.Field) "mutable" else "extendable")
+
+                        // An "extendable" class is implicitly also "accessible"
+                        if (entry is ClassTweakerEntry.AccessModifier.Class) {
+                            continue
+                        }
+                    }
+                    if (entry.modification == ClassTweakerEntry.AccessModifier.Modification.Public) {
+                        writeEntry("accessible")
+                    }
+                }
+                is ClassTweakerEntry.InjectInterface -> {
+                    writer
+                        .append(if (entry.transitive) "transitive-" else "")
+                        .append("inject-interface ")
+                        .append(entry.targetClass)
+                        .append(' ')
+                        .append(entry.interfaceToInject)
+                }
+            }
+        }
+    }
+
+    override fun toString(): String {
+        val writer = StringWriter()
+        write(writer)
+        return writer.toString()
+    }
+
     companion object {
-
-
         fun parse(reader: Reader): ClassTweaker {
             val lineReader = LineNumberReader(reader)
             val header = lineReader.readUncommentedLine()
@@ -66,9 +200,16 @@ internal data class ClassTweaker(
                 ClassTweakerFormat.AT to ClassTweakerNamespace.Official
             }
 
-            val entries = lineReader.lineSequence()
+            val lines = if (format == ClassTweakerFormat.AT) {
+                sequenceOf(header) + lineReader.lineSequence()
+            } else {
+                lineReader.lineSequence()
+            }
+
+            val entries = lines
                 .map { line -> line.trimStart() }
                 .filter { !it.startsWith('#') }
+                .map { line -> line.removeComment() }
                 .map { line -> line.words() }
                 .map { words -> format.syntaxTree.parse(words) ?: lineReader.error("Failed to parse $words") }
                 .toList()
@@ -79,37 +220,40 @@ internal data class ClassTweaker(
 }
 
 internal sealed interface ClassTweakerEntry {
-    sealed class AccessModifier(
-        val access: AccessModifierType,
-        val isTransitive: Boolean,
-        val isFinal: Boolean? = null,
-    ) : ClassTweakerEntry {
-        class Class(
-            access: AccessModifierType,
-            isTransitive: Boolean,
-            isFinal: Boolean?,
-            val className: String,
-        ) : AccessModifier(access, isTransitive)
+    val transitive: Boolean
 
-        class Method(
-            access: AccessModifierType,
-            isTransitive: Boolean,
-            isFinal: Boolean?,
-            val className: String,
+    sealed interface AccessModifier : ClassTweakerEntry {
+        val modification: Modification
+        override val transitive: Boolean
+        val final: Boolean?
+        val className: String
+
+        data class Class(
+            override val modification: Modification,
+            override val transitive: Boolean,
+            override val final: Boolean?,
+            override val className: String,
+        ) : AccessModifier
+
+        data class Method(
+            override val modification: Modification,
+            override val transitive: Boolean,
+            override val final: Boolean?,
+            override val className: String,
             val methodName: String,
             val methodDescriptor: String,
-        ) : AccessModifier(access, isTransitive, isFinal)
+        ) : AccessModifier
 
-        class Field(
-            access: AccessModifierType,
-            isTransitive: Boolean,
-            isFinal: Boolean?,
-            val className: String,
+        data class Field(
+            override val modification: Modification,
+            override val transitive: Boolean,
+            override val final: Boolean?,
+            override val className: String,
             val fieldName: String,
             val fieldDescriptor: String?,
-        ) : AccessModifier(access, isTransitive, isFinal)
+        ) : AccessModifier
 
-        enum class AccessModifierType {
+        enum class Modification {
             /** The target keeps its original visibility modifier. */
             Unset,
 
@@ -130,12 +274,12 @@ internal sealed interface ClassTweakerEntry {
     data class InjectInterface(
         val targetClass: String,
         val interfaceToInject: String,
-        val isTransitive: Boolean,
+        override val transitive: Boolean,
     ) : ClassTweakerEntry
 }
 
 /**
- * Represents the supported access widener formats.
+ * Represents the supported class tweaker formats.
  */
 internal enum class ClassTweakerFormat {
     /** (Neo)Forge's `accesstransformer.cfg`. */
@@ -150,7 +294,8 @@ internal enum class ClassTweakerFormat {
     /** Fabric's `classTweaker v1` aka AW_V3 */
     CT;
 
-    val syntaxTree by lazy { createSyntaxTree(this) }
+    val syntaxTree: SyntaxTree<ClassTweakerEntry>
+        get() = SYNTAX_BY_FORMAT[this]!!
 
     /**
      * @throws IllegalStateException if the provided class tweaker contains any entries not supported by this format
@@ -167,7 +312,7 @@ internal enum class ClassTweakerFormat {
             // Why would anyone need that?
             if (classTweaker.entries
                     .filterIsInstance<ClassTweakerEntry.AccessModifier>()
-                    .any { it.isFinal == true || it.isFinal == null && it.access != ClassTweakerEntry.AccessModifier.AccessModifierType.Public && it.access != ClassTweakerEntry.AccessModifier.AccessModifierType.Unset }) {
+                    .any { it.final == true || it.final == null && it.modification != ClassTweakerEntry.AccessModifier.Modification.Public && it.modification != ClassTweakerEntry.AccessModifier.Modification.Unset }) {
                 error("Provided format ${classTweaker.format} does not support restricting member accessibility")
             }
 
@@ -182,6 +327,8 @@ internal enum class ClassTweakerFormat {
     }
 
     companion object {
+        private val SYNTAX_BY_FORMAT = entries.associateWith { createSyntaxTree(it) }
+
         private fun createSyntaxTree(format: ClassTweakerFormat): SyntaxTree<ClassTweakerEntry> {
             return when (format) {
                 AW_V1, AW_V2, CT -> createFabricSyntaxTree(format)
@@ -207,31 +354,31 @@ internal enum class ClassTweakerFormat {
                     else -> false
                 }
 
-                +KeywordSyntaxNodeType("class")() { _ ->
+                +"class" {
                     +StringNodeType() { className ->
                         leaf {
                             ClassTweakerEntry.AccessModifier.Class(
-                                access = when (modifier) {
-                                    AccessModifierNodeType.AccessModifierType.Accessible -> ClassTweakerEntry.AccessModifier.AccessModifierType.Public
-                                    AccessModifierNodeType.AccessModifierType.Extendable -> ClassTweakerEntry.AccessModifier.AccessModifierType.Public
+                                modification = when (modifier) {
+                                    AccessModifierNodeType.AccessModifierType.Accessible -> ClassTweakerEntry.AccessModifier.Modification.Public
+                                    AccessModifierNodeType.AccessModifierType.Extendable -> ClassTweakerEntry.AccessModifier.Modification.Public
                                     else -> syntaxError("Unsupported access modifier for class")
                                 },
-                                isTransitive = transitive,
+                                transitive = transitive,
                                 isFinal,
                                 className
                             )
                         }
                     }
                 }
-                +KeywordSyntaxNodeType("method")() { _ ->
-                    +StringNodeType() { className ->
-                        +StringNodeType() { methodName ->
-                            +StringNodeType() { methodDescriptor ->
+                +"method" {
+                    +word()() { className ->
+                        +word()() { methodName ->
+                            +word()() { methodDescriptor ->
                                 leaf {
                                     ClassTweakerEntry.AccessModifier.Method(
-                                        access = when (modifier) {
-                                            AccessModifierNodeType.AccessModifierType.Accessible -> ClassTweakerEntry.AccessModifier.AccessModifierType.Public
-                                            AccessModifierNodeType.AccessModifierType.Extendable -> ClassTweakerEntry.AccessModifier.AccessModifierType.Protected
+                                        modification = when (modifier) {
+                                            AccessModifierNodeType.AccessModifierType.Accessible -> ClassTweakerEntry.AccessModifier.Modification.Public
+                                            AccessModifierNodeType.AccessModifierType.Extendable -> ClassTweakerEntry.AccessModifier.Modification.Protected
                                             else -> syntaxError("Unsupported access modifier for method")
                                         },
                                         transitive,
@@ -243,15 +390,15 @@ internal enum class ClassTweakerFormat {
                         }
                     }
                 }
-                +KeywordSyntaxNodeType("field")() { _ ->
-                    +StringNodeType() { className ->
-                        +StringNodeType() { fieldName ->
-                            +StringNodeType() { fieldDescriptor ->
+                +"field" {
+                    +word()() { className ->
+                        +word()() { fieldName ->
+                            +word()() { fieldDescriptor ->
                                 leaf {
                                     ClassTweakerEntry.AccessModifier.Field(
-                                        access = when (modifier) {
-                                            AccessModifierNodeType.AccessModifierType.Accessible -> ClassTweakerEntry.AccessModifier.AccessModifierType.Public
-                                            AccessModifierNodeType.AccessModifierType.Mutable -> ClassTweakerEntry.AccessModifier.AccessModifierType.Unset
+                                        modification = when (modifier) {
+                                            AccessModifierNodeType.AccessModifierType.Accessible -> ClassTweakerEntry.AccessModifier.Modification.Public
+                                            AccessModifierNodeType.AccessModifierType.Mutable -> ClassTweakerEntry.AccessModifier.Modification.Unset
                                             else -> syntaxError("Unsupported access modifier for field")
                                         },
                                         transitive,
@@ -266,9 +413,9 @@ internal enum class ClassTweakerFormat {
             }
 
             if (format == CT) {
-                +KeywordSyntaxNodeType("inject-interface").transitiveTagged()() { (_, transitive) ->
-                    +StringNodeType() { className ->
-                        +StringNodeType() { interfaceName ->
+                +literal("inject-interface").transitiveTagged()() { (_, transitive) ->
+                    +word()() { className ->
+                        +word()() { interfaceName ->
                             leaf {
                                 ClassTweakerEntry.InjectInterface(
                                     className,
@@ -293,27 +440,27 @@ internal enum class ClassTweakerFormat {
         // (indicating a field descriptor, if any).
         private fun createForgeLikeSyntaxTree() = syntaxTree<ClassTweakerEntry> {
             +AccessTransformerNodeType() { (access, final) ->
-                +StringNodeType() { className ->
+                +word()() { className ->
                     val className = className.replace('.', '/')
 
                     leaf {
                         ClassTweakerEntry.AccessModifier.Class(
-                            access, isTransitive = false, final, className
+                            access, transitive = false, final, className
                         )
                     }
 
-                    +StringNodeType() { target ->
+                    +word()() { target ->
                         // target is either <methodName><methodDesc> OR <fieldName> if this is the leaf
                         leaf {
                             val descStart = target.indexOf('(')
                             if (descStart < 0) {
                                 ClassTweakerEntry.AccessModifier.Field(
-                                    access, isTransitive = false, final,
+                                    access, transitive = false, final,
                                     className, target, fieldDescriptor = null,
                                 )
                             } else {
                                 ClassTweakerEntry.AccessModifier.Method(
-                                    access, isTransitive = false, final,
+                                    access, transitive = false, final,
                                     className,
                                     methodName = target.substring(0, descStart),
                                     methodDescriptor = target.substring(descStart),
@@ -321,15 +468,15 @@ internal enum class ClassTweakerFormat {
                             }
                         }
 
-                        +StringNodeType() { descriptor ->
+                        +word()() { descriptor ->
                             leaf {
                                 if (descriptor.startsWith('(')) {
                                     ClassTweakerEntry.AccessModifier.Method(
-                                        access, isTransitive = false, final, className, target, descriptor
+                                        access, transitive = false, final, className, target, descriptor
                                     )
                                 } else {
                                     ClassTweakerEntry.AccessModifier.Field(
-                                        access, isTransitive = false, final, className, target, descriptor
+                                        access, transitive = false, final, className, target, descriptor
                                     )
                                 }
                             }
@@ -368,19 +515,18 @@ object AccessModifierNodeType : SyntaxNodeType<AccessModifierNodeType.AccessModi
 
 class TransitiveTaggedNodeType<T>(private val type: SyntaxNodeType<T>) : SyntaxNodeType<TransitiveTaggedNodeType.TransitiveTaggedNode<T>> {
     override fun tryParse(string: String): TransitiveTaggedNode<T>? {
-        val cmdDelim = string.indexOf('-') + 1
-        val cmdTransitive = string.subSequence(0, cmdDelim)
-        val cmdName = string.subSequence(cmdDelim, string.length).toString()
-        val isTransitive = when (cmdTransitive) {
-            "transitive-" -> true
-            "" -> false
-            else -> return null
+        val transitiveIndex = string.indexOf("transitive-")
+        if (transitiveIndex != 0) {
+            // Not transitive
+            val node = type.tryParse(string)
+                ?: return null
+            return TransitiveTaggedNode(node, false)
         }
 
-        val node = type.tryParse(cmdName)
+        val subNodeString = string.substring("transitive-".length)
+        val node = type.tryParse(subNodeString)
             ?: return null
-
-        return TransitiveTaggedNode(node, isTransitive)
+        return TransitiveTaggedNode(node, true)
     }
 
     data class TransitiveTaggedNode<T>(val node: T, val isTransitive: Boolean)
@@ -395,10 +541,10 @@ internal object AccessTransformerNodeType : SyntaxNodeType<AccessTransformerNode
     override fun tryParse(string: String): AccessTransformerNode? {
         val modDelimiter = min(string.indexOfAny(accessModifierDelimiters).toUInt(), string.length.toUInt()).toInt()
         val accessType = when (string.subSequence(0, modDelimiter)) {
-            "public" -> ClassTweakerEntry.AccessModifier.AccessModifierType.Public
-            "protected" -> ClassTweakerEntry.AccessModifier.AccessModifierType.Protected
-            "default" -> ClassTweakerEntry.AccessModifier.AccessModifierType.Unset
-            "private" -> ClassTweakerEntry.AccessModifier.AccessModifierType.Private
+            "public" -> ClassTweakerEntry.AccessModifier.Modification.Public
+            "protected" -> ClassTweakerEntry.AccessModifier.Modification.Protected
+            "default" -> ClassTweakerEntry.AccessModifier.Modification.Unset
+            "private" -> ClassTweakerEntry.AccessModifier.Modification.Private
             else -> return null
         }
         val isFinal = when (string.subSequence(modDelimiter, string.length)) {
@@ -411,12 +557,9 @@ internal object AccessTransformerNodeType : SyntaxNodeType<AccessTransformerNode
         return AccessTransformerNode(accessType, isFinal)
     }
 
-    data class AccessTransformerNode(val modifier: ClassTweakerEntry.AccessModifier.AccessModifierType, val final: Boolean?)
+    data class AccessTransformerNode(val modifier: ClassTweakerEntry.AccessModifier.Modification, val final: Boolean?)
 }
 
-object StringNodeType : SyntaxNodeType<String> {
-    override fun tryParse(string: String): String? {
-        return string
-    }
-}
+
+
 

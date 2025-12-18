@@ -48,8 +48,8 @@ abstract class BaseFunctionalTest {
     }
 
     protected fun setupMinimalLoom(
-        minecraftVersion: String = "1.21.11-rc1",
-        fabricLoaderVersion: String = "0.18.1"
+        minecraftVersion: String = "26.1-snapshot-1",
+        fabricLoaderVersion: String = "0.18.3"
     ) {
         gradlePropertiesFile.appendText("modstitch.platform=fabric-loom\n")
 
