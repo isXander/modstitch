@@ -407,6 +407,9 @@ internal enum class AccessWidenerFormat {
 
     /** Fabric's `accessWidener v2`. */
     AW_V2,
+
+    /** Fabric's `classTweaker v1` aka AW_V3 */
+    CT,
 }
 
 /**

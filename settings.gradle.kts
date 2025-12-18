@@ -3,5 +3,5 @@ plugins {
 }
 rootProject.name = "modstitch"
 
-includeBuild("test-project")
+//includeBuild("test-project")
 

@@ -42,8 +42,8 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
     }
 
     @Test @Tag("loom")
-    fun `AW appear in JAR`() {
-        setupMinimalLoomAW()
+    fun `AW appear in JAR (remap)`() {
+        setupMinimalLoomAW(remap = true)
 
         // run gradle build to produce the JAR
         val result = run {
@@ -60,9 +60,28 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
         confirmAWInJar(AccessWidenerFormat.AW_V2)
     }
 
-    @Test @Tag("loom")
+    @Test @Tag("loom-noremap")
+    fun `AW appear in JAR (no remap)`() {
+        setupMinimalLoomAW(remap = false)
+
+        // run gradle build to produce the JAR
+        val result = run {
+            withArguments("build", "--stacktrace")
+        }
+
+        // assert that the build was successful
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":build")?.outcome,
+            "Expected build task to succeed, but it failed with outcome: ${result.task(":build")?.outcome}"
+        )
+
+        confirmAWInJar(AccessWidenerFormat.AW_V2)
+    }
+
+    @Test @Tag("loom-noremap")
     fun `AW appear in JAR with configuration cache`() {
-        setupMinimalLoomAW()
+        setupMinimalLoomAW(remap = false)
 
         repeat(2) {
             val result = run {
@@ -78,8 +97,12 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
         confirmAWInJar(AccessWidenerFormat.AW_V2)
     }
 
-    private fun setupMinimalLoomAW() {
-        setupMinimalLoom()
+    private fun setupMinimalLoomAW(remap: Boolean) {
+        if (remap) {
+            setupMinimalLoomRemap()
+        } else {
+            setupMinimalLoom()
+        }
 
         // create AW file in project root for modstitch to find
         createAWFile(`modstitch dot accessWidener`, AccessWidenerFormat.AW_V1)
@@ -97,7 +120,7 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
         file.writeText(AccessWidenerTest.sampleAW(format).toString())
     }
 
-    private fun confirmAWInJar(format: AccessWidenerFormat) {
+    private fun confirmAWInJar(format: AccessWidenerFormat, remap: Boolean) {
         val awLocation = when (format) {
             AccessWidenerFormat.AT -> "META-INF/accesstransformer.cfg"
             AccessWidenerFormat.AW_V1, AccessWidenerFormat.AW_V2 -> "unnamed_mod.accessWidener"
@@ -118,7 +141,8 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
                 assertEquals(
                     AccessWidenerTest.sampleAW(format, namespace = when (format) {
                         AccessWidenerFormat.AT -> "named"
-                        AccessWidenerFormat.AW_V1, AccessWidenerFormat.AW_V2 -> "intermediary"
+                        AccessWidenerFormat.AW_V1, AccessWidenerFormat.AW_V2 ->
+                            if (remap) "intermediary" else "official"
                     }),
                     parsedAW,
                     "Parsed AT does not match expected sample AT"
