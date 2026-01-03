@@ -129,7 +129,6 @@ class ClassTweakerTest {
     fun `CT reproducibility`() {
         val expected = sampleCT(ClassTweakerFormat.CT)
         val stringified = expected.toString()
-        println(stringified)
         val parsed = ClassTweaker.parse(StringReader(stringified))
 
         assertEquals(expected, parsed, "ClassTweaker parsed from stringified version should match the original")

@@ -22,6 +22,7 @@ enum class Platform(val friendlyName: String, val modManifest: String) {
         get() = this == Loom
 
     companion object {
+        // this has to be a set to remove duplicates like fabric-loom and fabric-loom-remap
         val allModManifests = entries.map { it.modManifest }.toSet()
 
         fun fromFriendlyName(name: String): Platform? {
