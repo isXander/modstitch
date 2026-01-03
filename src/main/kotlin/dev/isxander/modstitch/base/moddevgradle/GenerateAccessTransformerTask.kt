@@ -14,8 +14,7 @@ import org.gradle.api.tasks.TaskAction
  * A Gradle task that converts the provided [classTweaker] to an [accessTransformer],
  * optionally remapping it using the specified [mappings], if available.
  */
-abstract class GenerateAccessTransformerTask : DefaultTask()
-{
+abstract class GenerateAccessTransformerTask : DefaultTask() {
     /** The class tweaker file to convert into an access transformer. */
     @get:InputFile
     @get:Optional

@@ -210,7 +210,9 @@ internal data class ClassTweaker(
                 .map { line -> line.trimStart() }
                 .filter { !it.startsWith('#') }
                 .map { line -> line.removeComment() }
+                .filter { line -> line.isNotBlank() }
                 .map { line -> line.words() }
+                .filter { words -> words.isNotEmpty() }
                 .map { words -> format.syntaxTree.parse(words) ?: lineReader.error("Failed to parse $words") }
                 .toList()
 

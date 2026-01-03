@@ -13,7 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class AccessWidenerIntegration : BaseFunctionalTest() {
+class ClassTweakerIntegration : BaseFunctionalTest() {
     // all valid searched paths for access widener files
     val `modstitch dot ct` by lazy { projectDir.resolve("modstitch.ct") }
     val `dot classTweaker` by lazy { projectDir.resolve(".classTweaker") }
@@ -43,7 +43,7 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
 
     @Test @Tag("loom")
     fun `AW appear in JAR (remap)`() {
-        setupMinimalLoomAW(remap = true)
+        setupMinimalLoomCT(remap = true)
 
         // run gradle build to produce the JAR
         val result = run {
@@ -64,7 +64,7 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
 
     @Test @Tag("loom-noremap")
     fun `AW appear in JAR (no remap)`() {
-        setupMinimalLoomAW(remap = false)
+        setupMinimalLoomCT(remap = false)
 
         // run gradle build to produce the JAR
         val result = run {
@@ -82,8 +82,8 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
     }
 
     @Test @Tag("loom-noremap")
-    fun `AW appear in JAR with configuration cache`() {
-        setupMinimalLoomAW(remap = false)
+    fun `CT appear in JAR with configuration cache`() {
+        setupMinimalLoomCT(remap = false)
 
         repeat(2) {
             val result = run {
@@ -99,7 +99,7 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
         confirmCTInJar(ClassTweakerFormat.CT, remap = false)
     }
 
-    private fun setupMinimalLoomAW(remap: Boolean) {
+    private fun setupMinimalLoomCT(remap: Boolean) {
         if (remap) {
             setupMinimalLoomRemap()
         } else {

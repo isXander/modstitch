@@ -65,13 +65,28 @@ class ClassTweakerTest {
     }
 
     @Test
+    fun `AW parsing with space`() {
+        // language=access widener
+        val input = """
+            accessWidener v1 official
+            
+            accessible class class/Name
+            # this is a valid AW comment
+            extendable method class/Name methodName ()Lreturn/Type; #comment
+            accessible field class/Name fieldName Lfield/Type;
+        """.trimIndent()
+
+        ClassTweaker.parse(StringReader(input))
+    }
+
+    @Test
     fun `AT parsing`() {
         // language=access transformers
         val input = """
             # test comment
             public class.Name
             protected-f class.Name methodName()Lreturn/Type; #another comment
-            public class.Name fieldName 
+            public class.Name fieldName Lfield/Type;
         """.trimIndent()
 
         val parsed = ClassTweaker.parse(StringReader(input))

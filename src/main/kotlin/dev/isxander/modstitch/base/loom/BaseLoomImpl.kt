@@ -100,6 +100,9 @@ class BaseLoomImpl(
         // If no class tweaker is specified, there's nothing else for us to do.
         val classTweakerFile = modstitch.classTweaker.orNull?.asFile ?: return
 
+        // we need to know what namespace (either official or named) the class tweaker needs to be in
+        val isUnobfuscated = modstitch.isUnobfuscated.orNull ?: true
+
         // Read the class tweaker from the specified path, convert it to the `classTweaker v1` format,
         // save it to a static location, and point Loom to it. If the specified file does not exist,
         // allow it to throw - we don't want to silently ignore a potential misconfiguration.
@@ -114,11 +117,15 @@ class BaseLoomImpl(
             val tmpClassTweakerFile = target.layout.buildDirectory.file("modstitch/modstitch.ct").get().asFile
             outputs.file(tmpClassTweakerFile)
 
+            inputs.property("targetNamespace", isUnobfuscated)
+
             doLast {
                 // Read the class tweaker from the specified path, convert it to the `classTweaker v1` format,
                 // save it to a static location. If the specified file does not exist,
                 // allow it to throw - we don't want to silently ignore a potential misconfiguration.
-                val classTweaker = classTweakerFile.reader().use { ClassTweaker.parse(it) }.convertFormat(ClassTweakerFormat.CT)
+                val classTweaker = classTweakerFile.reader().use { ClassTweaker.parse(it) }
+                    .convertFormat(ClassTweakerFormat.CT)
+                    .convertNamespace(if (isUnobfuscated) ClassTweakerNamespace.Official else ClassTweakerNamespace.Named)
                 tmpClassTweakerFile.parentFile.mkdirs()
                 tmpClassTweakerFile.writer().use { classTweaker.write(it) }
             }

@@ -22,7 +22,7 @@ enum class Platform(val friendlyName: String, val modManifest: String) {
         get() = this == Loom
 
     companion object {
-        val allModManifests = entries.map { it.modManifest }
+        val allModManifests = entries.map { it.modManifest }.toSet()
 
         fun fromFriendlyName(name: String): Platform? {
             return entries.firstOrNull { it.friendlyName == name }
