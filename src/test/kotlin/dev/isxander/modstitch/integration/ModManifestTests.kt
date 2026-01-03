@@ -8,9 +8,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ModManifestTests : BaseFunctionalTest() {
-    @Test @Tag("loom")
-    fun `mod manifest set correctly loom`() {
+    @Test @Tag("loom-noremap")
+    fun `mod manifest set correctly loom noremap`() {
         setupMinimalLoom()
+        testModManifest(Platform.Loom.modManifest)
+    }
+
+    @Test @Tag("loom-remap")
+    fun `mod manifest set correctly loom remap`() {
+        setupMinimalLoomRemap()
         testModManifest(Platform.Loom.modManifest)
     }
 

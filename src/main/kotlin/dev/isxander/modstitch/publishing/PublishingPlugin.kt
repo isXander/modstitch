@@ -13,6 +13,7 @@ class PublishingPlugin : ModstitchExtensionPlugin("publishing", platforms) {
     companion object {
         val platforms: ExtensionPlatforms = mapOf(
             Platform.Loom to PublishingLoomImpl(),
+            Platform.LoomRemap to PublishingLoomImpl(),
             Platform.MDG to PublishingModdevgradleImpl(MDGType.Regular),
             Platform.MDGLegacy to PublishingModdevgradleImpl(MDGType.Legacy),
         )

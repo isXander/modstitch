@@ -12,7 +12,7 @@ import dev.isxander.modstitch.util.RegisteredGradlePlugin
 class ShadowPlugin : ModstitchExtensionPlugin("shadow", platforms) {
     companion object {
         val platforms = mapOf<Platform, PlatformPlugin<*>>(
-            Platform.Loom to ShadowLoomImpl(),
+            Platform.LoomRemap to ShadowLoomImpl(),
             Platform.MDG to ShadowModdevgradleImpl(MDGType.Regular),
             Platform.MDGLegacy to ShadowModdevgradleImpl(MDGType.Legacy),
         )

@@ -1,10 +1,10 @@
 package dev.isxander.modstitch.integration
 
 import com.google.gson.JsonObject
-import dev.isxander.modstitch.unit.AccessWidenerTest
-import dev.isxander.modstitch.util.AccessWidener
-import dev.isxander.modstitch.util.AccessWidenerFormat
-import org.gradle.testkit.runner.BuildResult
+import dev.isxander.modstitch.unit.ClassTweakerTest
+import dev.isxander.modstitch.util.ClassTweaker
+import dev.isxander.modstitch.util.ClassTweakerFormat
+import dev.isxander.modstitch.util.ClassTweakerNamespace
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Tag
 import java.io.File
@@ -13,10 +13,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-class AccessWidenerIntegration : BaseFunctionalTest() {
+class ClassTweakerIntegration : BaseFunctionalTest() {
     // all valid searched paths for access widener files
-    val `modstitch dot accessWidener` by lazy { projectDir.resolve("modstitch.accessWidener") }
-    val `dot accessWidener` by lazy { projectDir.resolve(".accessWidener") }
+    val `modstitch dot ct` by lazy { projectDir.resolve("modstitch.ct") }
+    val `dot classTweaker` by lazy { projectDir.resolve(".classTweaker") }
     val `accesstransformer dot cfg` by lazy { projectDir.resolve("accesstransformer.cfg") }
 
     @Test @Tag("mdg")
@@ -24,7 +24,7 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
         setupMinimalMdg()
 
         // create AW file in project root for modstitch to find
-        createAWFile(`modstitch dot accessWidener`, AccessWidenerFormat.AW_V1)
+        createCTFile(`dot classTweaker`, ClassTweakerFormat.AW_V1, ClassTweakerNamespace.Official)
 
         // run gradle build to produce the JAR
         val result = run {
@@ -38,12 +38,33 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
             "Expected build task to succeed, but it failed with outcome: ${result.task(":build")?.outcome}"
         )
 
-        confirmAWInJar(AccessWidenerFormat.AT)
+        confirmCTInJar(ClassTweakerFormat.AT, remap = false)
     }
 
     @Test @Tag("loom")
-    fun `AW appear in JAR`() {
-        setupMinimalLoomAW()
+    fun `AW appear in JAR (remap)`() {
+        setupMinimalLoomCT(remap = true)
+
+        // run gradle build to produce the JAR
+        val result = run {
+            withArguments("build", "--stacktrace")
+        }
+
+        println(result.output)
+
+        // assert that the build was successful
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":build")?.outcome,
+            "Expected build task to succeed, but it failed with outcome: ${result.task(":build")?.outcome}"
+        )
+
+        confirmCTInJar(ClassTweakerFormat.CT, remap = true)
+    }
+
+    @Test @Tag("loom-noremap")
+    fun `AW appear in JAR (no remap)`() {
+        setupMinimalLoomCT(remap = false)
 
         // run gradle build to produce the JAR
         val result = run {
@@ -57,12 +78,12 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
             "Expected build task to succeed, but it failed with outcome: ${result.task(":build")?.outcome}"
         )
 
-        confirmAWInJar(AccessWidenerFormat.AW_V2)
+        confirmCTInJar(ClassTweakerFormat.CT, remap = false)
     }
 
-    @Test @Tag("loom")
-    fun `AW appear in JAR with configuration cache`() {
-        setupMinimalLoomAW()
+    @Test @Tag("loom-noremap")
+    fun `CT appear in JAR with configuration cache`() {
+        setupMinimalLoomCT(remap = false)
 
         repeat(2) {
             val result = run {
@@ -75,14 +96,18 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
             )
         }
 
-        confirmAWInJar(AccessWidenerFormat.AW_V2)
+        confirmCTInJar(ClassTweakerFormat.CT, remap = false)
     }
 
-    private fun setupMinimalLoomAW() {
-        setupMinimalLoom()
+    private fun setupMinimalLoomCT(remap: Boolean) {
+        if (remap) {
+            setupMinimalLoomRemap()
+        } else {
+            setupMinimalLoom()
+        }
 
         // create AW file in project root for modstitch to find
-        createAWFile(`modstitch dot accessWidener`, AccessWidenerFormat.AW_V1)
+        createCTFile(`dot classTweaker`, ClassTweakerFormat.CT, if (remap) ClassTweakerNamespace.Named else ClassTweakerNamespace.Official)
 
         // create FMJ so we can check that we're putting the AW in the FMJ
         val fmj = JsonObject().apply {
@@ -93,14 +118,14 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
         fabricModJson.writeText(fmj.toString())
     }
 
-    private fun createAWFile(file: File, format: AccessWidenerFormat) {
-        file.writeText(AccessWidenerTest.sampleAW(format).toString())
+    private fun createCTFile(file: File, format: ClassTweakerFormat, namespace: ClassTweakerNamespace) {
+        file.writeText(ClassTweakerTest.sampleCT(format, namespace).toString())
     }
 
-    private fun confirmAWInJar(format: AccessWidenerFormat) {
+    private fun confirmCTInJar(format: ClassTweakerFormat, remap: Boolean) {
         val awLocation = when (format) {
-            AccessWidenerFormat.AT -> "META-INF/accesstransformer.cfg"
-            AccessWidenerFormat.AW_V1, AccessWidenerFormat.AW_V2 -> "unnamed_mod.accessWidener"
+            ClassTweakerFormat.AT -> "META-INF/accesstransformer.cfg"
+            ClassTweakerFormat.AW_V1, ClassTweakerFormat.AW_V2, ClassTweakerFormat.CT -> "unnamed_mod.ct"
         }
 
         // Get the JAR file and check if it exists
@@ -113,15 +138,16 @@ class AccessWidenerIntegration : BaseFunctionalTest() {
             assertNotNull(awFile) { "Expected AW/AT file to be present within JAR but is not." }
 
             jar.getInputStream(awFile).use { ins ->
-                val parsedAW = AccessWidener.parse(ins.bufferedReader())
+                val parsedAW = ClassTweaker.parse(ins.bufferedReader())
 
                 assertEquals(
-                    AccessWidenerTest.sampleAW(format, namespace = when (format) {
-                        AccessWidenerFormat.AT -> "named"
-                        AccessWidenerFormat.AW_V1, AccessWidenerFormat.AW_V2 -> "intermediary"
+                    ClassTweakerTest.sampleCT(format, namespace = when (format) {
+                        ClassTweakerFormat.AT -> ClassTweakerNamespace.Official
+                        ClassTweakerFormat.AW_V1, ClassTweakerFormat.AW_V2, ClassTweakerFormat.CT ->
+                            if (remap) ClassTweakerNamespace.Intermediary else ClassTweakerNamespace.Official
                     }),
                     parsedAW,
-                    "Parsed AT does not match expected sample AT"
+                    "Parsed AW/AT/CT does not match expected sample AW/AT/CT"
                 )
             }
         }

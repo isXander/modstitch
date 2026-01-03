@@ -6,9 +6,24 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MinimalIntegration : BaseFunctionalTest() {
-    @Test @Tag("loom")
-    fun `minimal loom succeeds`() {
+    @Test @Tag("loom-noremap")
+    fun `minimal loom noremap succeeds`() {
         setupMinimalLoom()
+
+        val result = run {
+            withArguments("build", "--stacktrace")
+        }
+
+        assertEquals(
+            TaskOutcome.SUCCESS,
+            result.task(":build")?.outcome,
+            "Expected build task to succeed, but it failed with outcome: ${result.task(":build")?.outcome}"
+        )
+    }
+
+    @Test @Tag("loom-remap")
+    fun `minimal loom remap succeeds`() {
+        setupMinimalLoomRemap()
 
         val result = run {
             withArguments("build", "--stacktrace")

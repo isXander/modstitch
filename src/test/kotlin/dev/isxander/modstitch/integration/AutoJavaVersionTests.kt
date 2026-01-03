@@ -72,7 +72,11 @@ class AutoJavaVersionTests : BaseFunctionalTest() {
             "Expected printJavaVersion task to succeed, but it failed with outcome: ${result.task(":printJavaVersion")?.outcome}"
         )
 
-        val regex = Regex("Java version: (?<version>.+)\n")
+        println("output start")
+        println(result.output)
+        println("output end")
+
+        val regex = Regex("Java version: (.+)\n")
         val matchResult = regex.find(result.output)
         val actualVersion = matchResult?.groupValues?.get(1)
         assertNotNull(actualVersion, "Expected output to contain 'Java version: <version>' but it was not found.")

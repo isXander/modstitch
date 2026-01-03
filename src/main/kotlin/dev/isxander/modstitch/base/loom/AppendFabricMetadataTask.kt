@@ -12,16 +12,22 @@ import java.io.File
  */
 abstract class AppendFabricMetadataTask : AppendModMetadataTask() {
     override fun appendModMetadata(file: File) {
-        val gson = GsonBuilder().setPrettyPrinting().create()
+        val gson = GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
         val json = file.reader().use { gson.fromJson(it, JsonObject::class.java) }
 
-        val accessWidener = accessWideners.get().let { if (it.isEmpty()) null else it.single() }
-        val existingAccessWidener = json["accessWidener"]?.asString
-        if (existingAccessWidener != null && existingAccessWidener != accessWidener) {
-            error("An access widener has already been specified: '$existingAccessWidener'.")
+        val schemaVersion = json["schemaVersion"]?.asInt ?: error("Did not detect a schemaVersion in fabric.mod.json.")
+        if (schemaVersion != 1) {
+            // TODO: support schema version 2
+            error("Unsupported fabric.mod.json schema version: $schemaVersion.")
         }
-        if (accessWidener != null) {
-            json.addProperty("accessWidener", accessWidener)
+
+        val classTweaker = classTweakers.get().let { if (it.isEmpty()) null else it.single() }
+        val existingClassTweaker = json["classTweaker"]?.asString
+        if (existingClassTweaker != null && existingClassTweaker != classTweaker) {
+            error("A class tweaker has already been specified: '$existingClassTweaker'.")
+        }
+        if (classTweaker != null) {
+            json.addProperty("accessWidener", classTweaker)
         }
 
         val mixinConfigs = json.getAsJsonArray("mixins") ?: JsonArray().also { json.add("mixins", it) }

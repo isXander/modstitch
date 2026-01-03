@@ -38,6 +38,6 @@ internal fun Project.afterSuccessfulEvaluate(action: Action<Project>) = project.
 /**
  * Zips three [Provider]s together, rather than the usual two.
  */
-internal fun <A, B, C, T> zip(a: Provider<A>, b: Provider<B>, c: Provider<C>, combiner: (A, B, C) -> T): Provider<T> {
+internal fun <A : Any, B : Any, C : Any, T : Any> zip(a: Provider<A>, b: Provider<B>, c: Provider<C>, combiner: (A, B, C) -> T): Provider<T> {
     return a.zip(b) { av, bv -> av to bv }.zip(c) { (av, bv), cv -> combiner(av, bv, cv) }
 }
