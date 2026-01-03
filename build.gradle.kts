@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.isxander.modstitch"
-version = "0.8.0"
+version = "0.7.1-unstable"
 
 repositories {
     mavenCentral()
@@ -38,7 +38,7 @@ gradlePlugin {
     }
 
     registerExtension("base", description = "The base plugin for ModStitch")
-    registerExtension("shadow", description = "Adds shadow plugin functionality, automatically configured for mod platforms.")
+    registerExtension("publishing", description = "Adds mod publishing functionality to ModStitch")
 }
 
 dependencies {
