@@ -225,8 +225,10 @@ class BaseLoomImpl(
 
     override fun createProxyConfigurations(target: Project, sourceSet: SourceSet) {
         if (sourceSet.name != SourceSet.MAIN_SOURCE_SET_NAME) {
-            target.loom.createRemapConfigurations(sourceSet)
-        } else if (type == LoomType.Remap) {
+            if (type == LoomType.Remap) {
+                target.loom.createRemapConfigurations(sourceSet)
+            }
+        } else {
             createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, Constants.Configurations.LOCAL_RUNTIME))
         }
 
