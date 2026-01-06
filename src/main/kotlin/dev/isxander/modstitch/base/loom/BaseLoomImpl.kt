@@ -136,7 +136,9 @@ class BaseLoomImpl(
         val tmpClassTweakerFile = target.layout.buildDirectory.file("modstitch/modstitch.ct").get().asFile
 
         // Generate the file immediately for Loom's configuration phase
-        val classTweaker = classTweakerFile.reader().use { ClassTweaker.parse(it) }.convertFormat(ClassTweakerFormat.CT)
+        val classTweaker = classTweakerFile.reader().use { ClassTweaker.parse(it) }
+            .convertFormat(ClassTweakerFormat.CT)
+            .convertNamespace(if (isUnobfuscated) ClassTweakerNamespace.Official else ClassTweakerNamespace.Named)
         tmpClassTweakerFile.parentFile.mkdirs()
         tmpClassTweakerFile.writer().use { classTweaker.write(it) }
         loom.accessWidenerPath = tmpClassTweakerFile
