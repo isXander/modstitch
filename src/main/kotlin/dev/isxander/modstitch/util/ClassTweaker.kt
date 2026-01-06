@@ -89,7 +89,6 @@ internal data class ClassTweaker(
                         is ClassTweakerEntry.AccessModifier.Method -> writer
                             .append(' ')
                             .append(entry.methodName)
-                            .append(' ')
                             .appendLine(entry.methodDescriptor)
                     }
                 }
