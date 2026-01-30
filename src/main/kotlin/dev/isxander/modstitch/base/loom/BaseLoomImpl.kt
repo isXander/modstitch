@@ -15,8 +15,7 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.kotlin.dsl.*
-import org.gradle.kotlin.dsl.assign
-import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.accessors.runtime.maybeRegister
 import org.gradle.language.jvm.tasks.ProcessResources
 
 class BaseLoomImpl(
@@ -162,7 +161,8 @@ class BaseLoomImpl(
 
             // loom run configs does not support gradle lazy evaluation
             target.afterSuccessfulEvaluate {
-                target.extensions.getByType<LoomGradleExtensionAPI>().runs.register(modstitch.name) loom@{
+                val loomExt = target.extensions.getByType<LoomGradleExtensionAPI>()
+                maybeRegister(loomExt.runs, modstitch.name) loom@{
                     val loom = this@loom
 
                     modstitch.gameDirectory.orNull?.let { loom.runDir = it.asFile.absolutePath }
@@ -231,13 +231,20 @@ class BaseLoomImpl(
                 target.loom.createRemapConfigurations(sourceSet)
             }
         } else {
-            createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, Constants.Configurations.LOCAL_RUNTIME))
+            createProxyConfigurations(
+                target,
+                FutureNamedDomainObjectProvider.from(target.configurations, Constants.Configurations.LOCAL_RUNTIME)
+            )
         }
 
         super.createProxyConfigurations(target, sourceSet)
     }
 
-    override fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean) {
+    override fun createProxyConfigurations(
+        target: Project,
+        configuration: FutureNamedDomainObjectProvider<Configuration>,
+        defer: Boolean,
+    ) {
         if (defer) error("Cannot defer proxy configuration creation in Loom")
 
         // for no-remap, this "remap configuration" is just the regular configuration
@@ -247,6 +254,7 @@ class BaseLoomImpl(
                 .find { it.targetConfigurationName.get() == configuration.name }
                 ?.name
                 ?: error("Loom has not created a remap configuration for ${configuration.name}, modstitch cannot proxy it.")
+
             LoomType.NoRemap -> configuration.name
         }
 

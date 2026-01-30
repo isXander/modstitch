@@ -2,9 +2,12 @@ package dev.isxander.modstitch.util
 
 import org.gradle.api.Action
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.TaskContainer
+import org.gradle.kotlin.dsl.withType
 
 /**
  * Gets the [SourceSetContainer] from the project's extensions, if available.
@@ -32,6 +35,26 @@ internal val Project.projectChain: Sequence<Project>
 internal fun Project.afterSuccessfulEvaluate(action: Action<Project>) = project.afterEvaluate {
     if (state.failure == null) {
         action.execute(this)
+    }
+}
+
+/**
+ *  Registers or configures the task with the given name and type
+ *
+ *  @param name The name of the task to configure or register
+ *  @param constructorArgs The constructor arguments of the task
+ *  @param configure The configuration block
+ */
+internal inline fun <reified T : Task> TaskContainer.maybeRegister(
+    name: String,
+    vararg constructorArgs: Any,
+    configure: Action<T>,
+) {
+
+    if (name in names) {
+        this.withType<T>().named(name, configure)
+    } else {
+        this.register(name, T::class.java, configure, constructorArgs)
     }
 }
 

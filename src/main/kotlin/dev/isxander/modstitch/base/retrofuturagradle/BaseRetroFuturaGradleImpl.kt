@@ -396,7 +396,6 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
     }
 
 
-    @Suppress("UnstableApiUsage")
     private fun configureLegacyMixin(target: Project) {
         val modstitch = target.extensions.getByType<ModstitchExtension>()
         val ext = target.extensions.getByType<BaseRetroFuturaGradleExtension>()
@@ -427,21 +426,20 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
     override fun onEnable(target: Project, action: Action<Project>) {
         target.afterSuccessfulEvaluate(action)
     }
-}
 
-
-private fun addMixinDependencies(
-    target: Project,
-    dependencies: Provider<List<String>>,
-) {
-    target.afterSuccessfulEvaluate {
-        target.dependencies {
-            val implementation = target.configurations.named(JvmConstants.IMPLEMENTATION_CONFIGURATION_NAME)
-            val annotationProcessor =
-                target.configurations.getByName(JvmConstants.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
-            dependencies.get().forEach {
-                implementation(it)
-                annotationProcessor(it)
+    private fun addMixinDependencies(
+        target: Project,
+        dependencies: Provider<List<String>>,
+    ) {
+        target.afterSuccessfulEvaluate {
+            target.dependencies {
+                val implementation = target.configurations.named(JvmConstants.IMPLEMENTATION_CONFIGURATION_NAME)
+                val annotationProcessor =
+                    target.configurations.getByName(JvmConstants.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
+                dependencies.get().forEach {
+                    implementation(it)
+                    annotationProcessor(it)
+                }
             }
         }
     }
@@ -449,17 +447,6 @@ private fun addMixinDependencies(
 
 
 
-inline fun <reified T : Task> TaskContainer.maybeRegister(
-    name: String,
-    vararg constructorArgs: Any,
-    configure: Action<T>,
-) {
 
-    if (name in names) {
-        this.withType<T>().named(name, configure)
-    } else {
-        this.register(name, T::class.java, configure, constructorArgs)
-    }
-}
 
 
