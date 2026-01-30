@@ -165,7 +165,11 @@ class BaseLoomImpl(
                 maybeRegister(loomExt.runs, modstitch.name) loom@{
                     val loom = this@loom
 
-                    modstitch.gameDirectory.orNull?.let { loom.runDir = it.asFile.absolutePath }
+                    // loom uses a relative path from the project directory
+                    modstitch.gameDirectory.orNull?.let {
+                        loom.runDir = it
+                            .asFile.relativeTo(target.projectDir).path
+                    }
                     modstitch.mainClass.orNull?.let { loom.mainClass = it }
                     modstitch.jvmArgs.orNull?.let { loom.vmArgs.addAll(it) }
                     modstitch.programArgs.orNull?.let { loom.programArgs.addAll(it) }
