@@ -61,7 +61,6 @@ dependencies {
     implementation(plugin("net.neoforged.moddev", prop = "deps.moddevgradle"))
     implementation(plugin("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle"))
     implementation(plugin("me.modmuss50.mod-publish-plugin", prop = "deps.mpp"))
-    implementation(plugin("com.gradleup.shadow", prop = "deps.shadow"))
     implementation(plugin("com.gtnewhorizons.retrofuturagradle", prop = "deps.retrofuturagradle"))
     implementation(plugin("xyz.wagyourtail.jvmdowngrader", prop = "deps.jvmDowngrader"))
     // Libraries used within the plugin
