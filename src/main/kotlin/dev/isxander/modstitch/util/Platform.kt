@@ -6,7 +6,8 @@ enum class Platform(val friendlyName: String, val modManifest: String) {
     Loom("fabric-loom", "fabric.mod.json"),
     LoomRemap("fabric-loom-remap", "fabric.mod.json"),
     MDG("moddevgradle", "META-INF/neoforge.mods.toml"),
-    MDGLegacy("moddevgradle-legacy", "META-INF/mods.toml");
+    MDGLegacy("moddevgradle-legacy", "META-INF/mods.toml"),
+    RFG("retrofuturagradle","mcmod.info");
 
     val isModDevGradle: Boolean
         get() = this in listOf(MDG, MDGLegacy)

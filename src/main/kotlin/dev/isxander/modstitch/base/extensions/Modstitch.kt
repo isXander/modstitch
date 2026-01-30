@@ -3,6 +3,7 @@ package dev.isxander.modstitch.base.extensions
 import dev.isxander.modstitch.base.*
 import dev.isxander.modstitch.base.loom.BaseLoomExtension
 import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleExtension
+import dev.isxander.modstitch.base.retrofuturagradle.BaseRetroFuturaGradleExtension
 import dev.isxander.modstitch.util.*
 import org.gradle.api.Action
 import org.gradle.api.NamedDomainObjectContainer
@@ -28,6 +29,10 @@ interface ModstitchExtension {
      * - When target platform is `loom`, this property is equivalent to `loom.fabricLoaderVersion`.
      * - When target platform is `moddevgradle`, this property is equivalent to `moddevgradle.neoForgeVersion`.
      * - When target platform is `moddevgradle-legacy`, this property is equivalent to `moddevgradle.forgeVersion`.
+     * - When target platform is `retrofuturagradle`, this property is equivalent to `retrofuturagradle.forgeVersion`.
+     *
+     *   On retrofuturagradle, the property only serves as a check, because retrofuturagradle forces specific forge
+     *   versions
      */
     val modLoaderVersion: Property<String>
 
@@ -213,6 +218,12 @@ interface ModstitchExtension {
      */
     fun moddevgradle(action: Action<BaseModDevGradleExtension>) {}
 
+    /**
+     * Configures the RetroFuturaGradle extension
+     * The action is only executed if the active platform is RetroFuturaGradle
+     */
+    fun retrofuturagradle(action: Action<BaseRetroFuturaGradleExtension>) {}
+
     val templatesSourceDirectorySet: SourceDirectorySet
 
     /**
@@ -232,6 +243,7 @@ open class ModstitchExtensionImpl @Inject constructor(
         Platform.Loom, Platform.LoomRemap -> project.extensions.getByType<BaseLoomExtension>().fabricLoaderVersion
         Platform.MDG -> project.extensions.getByType<BaseModDevGradleExtension>().neoForgeVersion
         Platform.MDGLegacy -> project.extensions.getByType<BaseModDevGradleExtension>().forgeVersion
+        Platform.RFG -> project.extensions.getByType<BaseRetroFuturaGradleExtension>().forgeVersion
     }
 
     override val minecraftVersion = objects.property<String>()
@@ -301,6 +313,7 @@ open class ModstitchExtensionImpl @Inject constructor(
 
     override fun loom(action: Action<BaseLoomExtension>) = platformExtension(action)
     override fun moddevgradle(action: Action<BaseModDevGradleExtension>) = platformExtension(action)
+    override fun retrofuturagradle(action: Action<BaseRetroFuturaGradleExtension>) = platformExtension(action)
 
     private inline fun <reified T : Any> platformExtension(action: Action<T>) {
         val platformExtension = plugin.platformExtension

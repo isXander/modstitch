@@ -276,6 +276,7 @@ class BaseModDevGradleImpl(
     override fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean) {
         val proxyModConfigurationName = configuration.name.addCamelCasePrefix("modstitchMod")
         val proxyRegularConfigurationName = configuration.name.addCamelCasePrefix("modstitch")
+        val proxyDowngradeConfigurationName = configuration.name.addCamelCasePrefix("modstitchDowngrade")
 
         // already created
         if (target.configurations.find { it.name == proxyModConfigurationName } != null) {
@@ -287,7 +288,7 @@ class BaseModDevGradleImpl(
             return target.afterSuccessfulEvaluate { action(configuration.get()) }
         }
 
-        target.configurations.create(proxyModConfigurationName) proxy@{
+        val regular = target.configurations.create(proxyModConfigurationName) proxy@{
             deferred {
                 it.extendsFrom(this@proxy)
             }
@@ -297,6 +298,14 @@ class BaseModDevGradleImpl(
                     remapConfiguration.extendsFrom(this@proxy)
                 }
             }
+        }
+
+        // does nothing here
+        target.configurations.create(proxyDowngradeConfigurationName) proxy@{
+            deferred {
+                it.extendsFrom(regular)
+            }
+
         }
 
         target.configurations.create(proxyRegularConfigurationName) proxy@{

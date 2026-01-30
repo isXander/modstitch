@@ -252,6 +252,12 @@ class BaseLoomImpl(
 
         val proxyModConfigurationName = configuration.name.addCamelCasePrefix("modstitchMod")
         val proxyRegularConfigurationName = configuration.name.addCamelCasePrefix("modstitch")
+        val proxyDowngradeConfigurationName = configuration.name.addCamelCasePrefix("modstitchDowngrade")
+
+        // does nothing here
+        target.configurations.create(proxyDowngradeConfigurationName) proxy@{
+            configuration.get().extendsFrom(this@proxy)
+        }
 
         target.configurations.create(proxyModConfigurationName) proxy@{
             target.configurations.named(remapConfigurationName) {
