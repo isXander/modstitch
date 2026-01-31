@@ -264,20 +264,24 @@ class BaseLoomImpl(
 
         val proxyModConfigurationName = configuration.name.addCamelCasePrefix("modstitchMod")
         val proxyRegularConfigurationName = configuration.name.addCamelCasePrefix("modstitch")
-        val proxyDowngradeConfigurationName = configuration.name.addCamelCasePrefix("modstitchDowngrade")
 
-        // does nothing here
-        target.configurations.create(proxyDowngradeConfigurationName) proxy@{
-            configuration.get().extendsFrom(this@proxy)
+
+        val proxyModConf = target.configurations.register(proxyModConfigurationName) proxy@{
+            isCanBeResolved = false
+            isCanBeConsumed = false
+            isCanBeDeclared = true
         }
 
-        target.configurations.create(proxyModConfigurationName) proxy@{
-            target.configurations.named(remapConfigurationName) {
-                extendsFrom(this@proxy)
-            }
+        target.configurations.named(remapConfigurationName) {
+            extendsFrom(proxyModConf.get())
         }
-        target.configurations.create(proxyRegularConfigurationName) proxy@{
+
+        target.configurations.register(proxyRegularConfigurationName) proxy@{
             configuration.get().extendsFrom(this@proxy)
+            isCanBeResolved = false
+            isCanBeConsumed = false
+            isCanBeDeclared = true
+
         }
     }
 

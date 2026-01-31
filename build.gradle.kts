@@ -5,7 +5,7 @@ plugins {
     idea
 }
 
-group = "dev.isxander.modstitch"
+group = "dev.isxander.modstitchh"
 version = "0.8.4"
 
 repositories {
@@ -62,7 +62,6 @@ dependencies {
     implementation(plugin("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle"))
     implementation(plugin("me.modmuss50.mod-publish-plugin", prop = "deps.mpp"))
     implementation(plugin("com.gtnewhorizons.retrofuturagradle", prop = "deps.retrofuturagradle"))
-    implementation(plugin("xyz.wagyourtail.jvmdowngrader", prop = "deps.jvmDowngrader"))
     // Libraries used within the plugin
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.electronwill.night-config:toml:3.8.1")

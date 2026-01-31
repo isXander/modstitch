@@ -4,7 +4,6 @@ import com.gtnewhorizons.retrofuturagradle.MinecraftExtension
 import com.gtnewhorizons.retrofuturagradle.UserDevPlugin
 import com.gtnewhorizons.retrofuturagradle.mcp.JSTTransformerTask
 import com.gtnewhorizons.retrofuturagradle.mcp.MCPTasks
-import com.gtnewhorizons.retrofuturagradle.mcp.ReobfuscatedJar
 import com.gtnewhorizons.retrofuturagradle.minecraft.RunMinecraftTask
 import com.gtnewhorizons.retrofuturagradle.modutils.ModUtils
 import com.gtnewhorizons.retrofuturagradle.util.Distribution
@@ -15,30 +14,26 @@ import dev.isxander.modstitch.base.extensions.modstitch
 import dev.isxander.modstitch.base.moddevgradle.GenerateAccessTransformerTask
 import dev.isxander.modstitch.util.*
 import net.neoforged.srgutils.IMappingFile
-import org.gradle.api.*
+import org.gradle.api.Action
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.FileCollectionDependency
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.internal.tasks.JvmConstants
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 import org.gradle.jvm.tasks.Jar
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.kotlin.dsl.*
-import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.language.jvm.tasks.ProcessResources
-import xyz.wagyourtail.jvmdg.gradle.JVMDowngraderPlugin
-import xyz.wagyourtail.jvmdg.gradle.jvmdg
 
 class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>(
     Platform.RFG,
     AppendRFGMetadataTask::class.java
 ) {
-
-    val nonDowngradedRegularConfigurations = mutableSetOf<String>()
 
     override val platformExtensionInfo: PlatformExtensionInfo<BaseRetroFuturaGradleExtension> = PlatformExtensionInfo(
         "msRetroFuturaGradle",
@@ -50,7 +45,6 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
     override fun applyPlugins(target: Project) {
         super.applyPlugins(target)
         target.pluginManager.apply(UserDevPlugin::class.java)
-        target.pluginManager.apply(JVMDowngraderPlugin::class.java)
     }
 
     override fun applyDefaultRepositories(repositories: RepositoryHandler) {
@@ -72,23 +66,8 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
 
     override fun applyJavaSettings(target: Project) {
         super.applyJavaSettings(target)
-        val ext = target.extensions.getByType<BaseRetroFuturaGradleExtension>()
-        val modstitch = target.extensions.getByType<ModstitchExtension>()
         target.extensions.configure<JavaPluginExtension> {
-            target.afterSuccessfulEvaluate {
-                val javaVer = ext.developmentJavaVersion.orNull
-                ext.enableJvmDowngrader.finalizeValueOnRead()
-                if (ext.enableJvmDowngrader.get() && javaVer != null) {
-                    JavaVersion.toVersion(javaVer).let {
-                        sourceCompatibility = it
-                        targetCompatibility = it
-                    }
-                }
-            }
             toolchain {
-                languageVersion.set(
-                    ext.developmentJavaVersion.orElse(modstitch.javaVersion).map { JavaLanguageVersion.of(it) }
-                )
                 // https://github.com/MinecraftForge/ForgeGradle/issues/597
                 // Important for stable decompilation output or else you get failed
                 // patches with: cannot find hunk target
@@ -101,26 +80,9 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
         val ext = createRealPlatformExtension(target)!!
         super.apply(target)
         val modstitch = target.modstitch
-        //todo set final jar tasks modstitch api
-        target.tasks.named("reobfJar", ReobfuscatedJar::class.java) {
-            if (ext.enableJvmDowngrader.get()) {
-                val oldJar = inputJar.get()
-                inputJar.set(target.jvmdg.defaultTask.flatMap { it.archiveFile }.orElse(oldJar))
-            }
-        }
-        target.tasks.named(LifecycleBasePlugin.ASSEMBLE_TASK_NAME) {
-            if (ext.enableJvmDowngrader.get()) {
-                dependsOn(target.jvmdg.defaultShadeTask)
-            }
-        }
+
         modstitch._namedJarTaskName = JvmConstants.JAR_TASK_NAME
-        target.afterSuccessfulEvaluate {
-            if(ext.enableJvmDowngrader.get()) {
-                modstitch._finalJarTaskName = target.jvmdg.defaultShadeTask.name
-            } else {
-                modstitch._finalJarTaskName = "reobfJar"
-            }
-        }
+        modstitch._finalJarTaskName = "reobfJar"
 
         modstitch.modLoaderManifest.convention(platform.modManifest)
         val minecraft = target.extensions.getByType<MinecraftExtension>()
@@ -144,7 +106,6 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
         configureLegacyMixin(target)
 
         applyRuns(target)
-        fixJvmDowngraderRuns(target)
     }
 
     override fun applyClassTweaker(target: Project) {
@@ -213,39 +174,6 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
 
     }
 
-
-    private fun fixJvmDowngraderRuns(target: Project) {
-        val ext = target.extensions.getByType<BaseRetroFuturaGradleExtension>()
-        val defaultShadeTask = target.jvmdg.defaultShadeTask
-        val nonDowngradedJar = target.tasks.named("jar", Jar::class.java).map { it.outputs.files }
-        val downgradedJarOutput = defaultShadeTask.map { it.outputs.files }
-        val nonDowngradedDependencies = target.provider {
-            target.files(
-                nonDowngradedRegularConfigurations
-                    .flatMap {
-                        val config = target.configurations.getByName(it)
-                        if (config.isCanBeResolved) config.resolve() else emptySet()
-                    }
-            )
-        }
-        target.tasks.withType<RunMinecraftTask>().configureEach {
-            if (ext.enableJvmDowngrader.get()) {
-                dependsOn(defaultShadeTask)
-                classpath(downgradedJarOutput.get())
-                val originalClasspath = classpath
-                //downgraded jar in first position
-
-                classpath = downgradedJarOutput.get()
-                    .plus(
-                        originalClasspath
-                            .minus(nonDowngradedJar.get())
-                            .minus(nonDowngradedDependencies.get())
-                    )
-            }
-        }
-    }
-
-
     private fun applyRuns(target: Project) {
         val modstitch = target.extensions.getByType<ModstitchExtension>()
         val ext = target.extensions.getByType<BaseRetroFuturaGradleExtension>()
@@ -272,12 +200,12 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
                     config.gameDirectory.orNull?.let {
                         this.workingDir = it.asFile
                     }
-                    this.mainClass.set(config.mainClass)
-                    this.jvmArguments.set(config.jvmArgs)
-                    this.extraArgs.set(config.programArgs)
-                    config.environmentVariables.finalizeValueOnRead()
-                    config.environmentVariables.orNull?.let { this.environment = it }
-
+                    config.mainClass.orNull?.let {
+                        this.mainClass.set(it)
+                    }
+                    this.jvmArguments.addAll(config.jvmArgs)
+                    this.extraArgs.addAll(config.programArgs)
+                    this.environment.putAll(config.environmentVariables.get())
                 }
                 val bool = target.gradle.startParameter.taskNames[0] == "build"
                 target.tasks.named<Jar>("jar") {
@@ -324,11 +252,8 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
         configuration: FutureNamedDomainObjectProvider<Configuration>,
         defer: Boolean,
     ) {
-        val ext = target.extensions.getByType<BaseRetroFuturaGradleExtension>()
-        val modstitch = target.extensions.getByType<ModstitchExtension>()
         val proxyModConfigurationName = configuration.name.addCamelCasePrefix("modstitchMod")
         val proxyRegularConfigurationName = configuration.name.addCamelCasePrefix("modstitch")
-        val proxyDowngradeConfigurationName = configuration.name.addCamelCasePrefix("modstitchDowngrade")
 
         // already created
         if (target.configurations.find { it.name == proxyModConfigurationName } != null) {
@@ -339,51 +264,42 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
             return target.afterSuccessfulEvaluate { action(configuration.get()) }
         }
 
-        val proxyMod = target.configurations.create(proxyModConfigurationName) proxy@{
-            deferred {
-                it.extendsFrom(this@proxy)
-            }
-        }
-
         val rfg = target.dependencies.extensions.getByType<ModUtils.RfgDependencyExtension>()
-        proxyMod.dependencies.configureEach {
-            if (this is FileCollectionDependency) {
-                rfg.deobf(this.files)
-            } else {
-                rfg.deobf(
-                    mapOf(
-                        "group" to this.group.orEmpty(),
-                        "name" to this.name.orEmpty(),
-                        "version" to this.version.orEmpty(),
-                        //todo: RFG also checks the classifier but IDK how to get it from here
-                    )
-                )
+        target.configurations.register(proxyModConfigurationName) proxy@{
+            deferred {
+                it.extendsFrom(this@proxy)
             }
-        }
 
-        deferred {
-            nonDowngradedRegularConfigurations.add(it.name)
-        }
-        nonDowngradedRegularConfigurations.add(proxyRegularConfigurationName)
-        target.configurations.create(proxyRegularConfigurationName) proxy@{
-            deferred {
-                it.extendsFrom(this@proxy)
-            }
-        }
-        val javaVersion = modstitch.javaVersion.map {
-            JavaVersion.toVersion(it)
-        }
-        val downgrade = target.configurations.create(proxyDowngradeConfigurationName) proxy@{
-            deferred {
-                it.extendsFrom(this@proxy)
-            }
-        }
-        target.afterSuccessfulEvaluate {
-            if (ext.enableJvmDowngrader.get()) {
-                target.jvmdg.dg(downgrade, false) {
-                    downgradeTo.set(javaVersion)
+            isCanBeResolved = false
+            isCanBeConsumed = false
+            isCanBeDeclared = true
+
+            dependencies.configureEach {
+                if (this is FileCollectionDependency) {
+                    rfg.deobf(this.files)
+                } else {
+                    rfg.deobf(
+                        mapOf(
+                            "group" to this.group.orEmpty(),
+                            "name" to this.name.orEmpty(),
+                            "version" to this.version.orEmpty(),
+                            //todo: RFG also checks the classifier but IDK how to get it from here
+                        )
+                    )
                 }
             }
+        }
+
+
+
+        target.configurations.register(proxyRegularConfigurationName) proxy@{
+            deferred {
+                it.extendsFrom(this@proxy)
+            }
+            isCanBeResolved = false
+            isCanBeConsumed = false
+            isCanBeDeclared = true
+
         }
     }
 
@@ -404,10 +320,14 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
 
         addMixinDependencies(target, ext.mixinsDependencies)
         val modUtils = target.extensions.getByType<ModUtils>()
-        modUtils.enableMixins(
-            null,
-            modstitch.metadata.modId.map { "$it.refmap.json" }.get()
-        )
+
+        // https://github.com/GTNewHorizons/RetroFuturaGradle/issues/95
+        @Suppress("UNCHECKED_CAST")
+        val mixinRefMap = ModUtils::class.java.getDeclaredField("mixinRefMap").apply {
+            isAccessible = true
+        }.get(modUtils) as Property<String>
+        mixinRefMap.set(modstitch.metadata.modId.map { "$it.refmap.json" })
+
 
         stitchedMixin.mixinSourceSets.whenObjectAdded obj@{
             modUtils.mixinSourceSet.set(target.sourceSets[this.sourceSetName.get()])
