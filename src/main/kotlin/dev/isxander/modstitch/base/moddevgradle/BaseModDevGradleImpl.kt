@@ -287,10 +287,13 @@ class BaseModDevGradleImpl(
             return target.afterSuccessfulEvaluate { action(configuration.get()) }
         }
 
-        target.configurations.create(proxyModConfigurationName) proxy@{
+        target.configurations.register(proxyModConfigurationName) proxy@{
             deferred {
                 it.extendsFrom(this@proxy)
             }
+            isCanBeResolved = false
+            isCanBeConsumed = false
+            isCanBeDeclared = true
 
             target.afterSuccessfulEvaluate {
                 if (type == MDGType.Legacy) {
@@ -299,10 +302,13 @@ class BaseModDevGradleImpl(
             }
         }
 
-        target.configurations.create(proxyRegularConfigurationName) proxy@{
+        target.configurations.register(proxyRegularConfigurationName) proxy@{
             deferred {
                 it.extendsFrom(this@proxy)
             }
+            isCanBeResolved = false
+            isCanBeConsumed = false
+            isCanBeDeclared = true
 
             target.afterSuccessfulEvaluate {
                 target.configurations.named("additionalRuntimeClasspath") {

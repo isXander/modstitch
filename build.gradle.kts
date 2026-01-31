@@ -5,7 +5,7 @@ plugins {
     idea
 }
 
-group = "dev.isxander.modstitch"
+group = "dev.isxander.modstitchh"
 version = "0.8.4"
 
 repositories {
@@ -13,6 +13,13 @@ repositories {
     gradlePluginPortal()
     maven("https://maven.fabricmc.net/")
     maven("https://maven.neoforged.net/releases/")
+    maven{
+        url = uri("https://nexus.gtnewhorizons.com/repository/public/")
+        mavenContent {
+            includeGroupByRegex("com\\.gtnewhorizons\\..+")
+            includeGroup("com.gtnewhorizons")
+        }
+    }
 }
 
 fun String.capitalize(): String {
@@ -54,12 +61,12 @@ dependencies {
     implementation(plugin("net.neoforged.moddev", prop = "deps.moddevgradle"))
     implementation(plugin("net.neoforged.moddev.legacyforge", prop = "deps.moddevgradle"))
     implementation(plugin("me.modmuss50.mod-publish-plugin", prop = "deps.mpp"))
-    implementation(plugin("com.gradleup.shadow", prop = "deps.shadow"))
-
+    implementation(plugin("com.gtnewhorizons.retrofuturagradle", prop = "deps.retrofuturagradle"))
     // Libraries used within the plugin
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.electronwill.night-config:toml:3.8.1")
     implementation("org.semver4j:semver4j:5.5.0")
+    implementation("net.neoforged:srgutils:1.0.11")
 
 
     // Libraries used for testing
