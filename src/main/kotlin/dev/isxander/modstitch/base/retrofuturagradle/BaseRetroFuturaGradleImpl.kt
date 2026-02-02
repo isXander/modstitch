@@ -306,7 +306,7 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
     override fun configureJiJConfiguration(target: Project, configuration: Configuration) {
         target.afterSuccessfulEvaluate {
             configuration.dependencies.whenObjectAdded {
-                error("RetroFuturaGradle does not support JarInJar, please use the 'modstitch' configuration instead'")
+                error("RetroFuturaGradle does not support JarInJar, please use the 'modstitch' configuration instead")
             }
         }
     }
