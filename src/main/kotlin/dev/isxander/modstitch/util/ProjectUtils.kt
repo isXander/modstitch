@@ -54,7 +54,8 @@ internal inline fun <reified T : Task> TaskContainer.maybeRegister(
     if (name in names) {
         this.withType<T>().named(name, configure)
     } else {
-        this.register(name, T::class.java, configure, constructorArgs)
+        val register = this.register(name, T::class.java, *constructorArgs)
+        register.configure(configure)
     }
 }
 

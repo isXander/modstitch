@@ -63,7 +63,7 @@ interface BaseRetroFuturaGradleExtension {
     val minecraft: MinecraftExtension
 
     /**
-     * Configurres the Minecraft extension
+     * Configures the Minecraft extension
      *
      * This action will only be executed on the `retrofuturagradle` platform
      */
@@ -104,9 +104,7 @@ open class BaseRetroFuturaGradleExtensionImpl @Inject constructor(
             it.minecraftVersion
         }.map {
             MinecraftVersion.Companion.parseOrderableOrNull(it)?.let {
-                if (it == MinecraftVersion.LegacyRelease(8, 9)) {
-                    mixinBooterDeps
-                } else if (it == MinecraftVersion.LegacyRelease(12, 2)) {
+                if (it == MinecraftVersion.LegacyRelease(12, 2)) {
                     mixinBooterDeps
                 } else if (it == MinecraftVersion.LegacyRelease(7, 10)) {
                     listOf(unimixinsMixin)

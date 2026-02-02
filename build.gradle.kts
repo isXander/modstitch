@@ -5,7 +5,7 @@ plugins {
     idea
 }
 
-group = "dev.isxander.modstitchh"
+group = "dev.isxander.modstitch"
 version = "0.8.4"
 
 repositories {

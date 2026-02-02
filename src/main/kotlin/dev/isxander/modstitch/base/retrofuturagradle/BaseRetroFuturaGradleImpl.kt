@@ -90,14 +90,6 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
         minecraft.mcpMappingChannel.set(ext.mcpChannel)
         minecraft.mcpMappingVersion.set(ext.mcpVersion)
         minecraft.extraRunJvmArguments.addAll(
-            mutableListOf(
-                "-ea:${target.group}",
-                "-Dmixin.hotSwap=true",
-                "-Dmixin.check.interfaces=true",
-                "-Dmixin.debug.export=true"
-            )
-        )
-        minecraft.extraRunJvmArguments.addAll(
             ext.coreModClassName.map {
                 listOf("-Dfml.coreMods.load=$it")
             }.orElse(emptyList())
@@ -130,6 +122,7 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
 
         val mcpTasks = target.extensions.getByType<MCPTasks>()
 
+        // Convert's RetroFuturaGradle's SRG mappings into TSRG for the access transformer conversion
         val convertMappingsTask = target.tasks.register<ConvertMappingsTask>("convertMappingsForAccessTransformers") {
             sourceMappingsFile.set(mcpTasks.taskGenerateForgeSrgMappings.flatMap { it.mcpToSrg })
             targetFormat.set(IMappingFile.Format.TSRG)
@@ -147,14 +140,6 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
                 accessTransformer.set(generatedAccessTransformer)
             }
 
-//        val projectDir = target.projectDir.toPath()
-//        mcpTasks.deobfuscationATs.from(
-//            generateAccessTransformerTask.map {
-//                it.outputs.files.map {
-//                    projectDir.relativize(it.toPath())
-//                }
-//            }
-//        )
         target.tasks.named<JSTTransformerTask>("applyJST") {
             this.accessTransformerFiles.setFrom(generateAccessTransformerTask)
         }
@@ -166,6 +151,8 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
                 into(classTweakerPath.map { it.dropLast(1).joinToString("/") })
             }
         }
+
+        // Sets the name of the access transformer files in the jar manifest
         target.tasks.named<Jar>("jar") {
             manifest {
                 attributes["FMLAT"] = classTweakerPath.get().last()
@@ -207,7 +194,7 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
                     this.extraArgs.addAll(config.programArgs)
                     this.environment.putAll(config.environmentVariables.get())
                 }
-                val bool = target.gradle.startParameter.taskNames[0] == "build"
+                val bool = target.gradle.startParameter.taskNames.firstOrNull() == "build"
                 target.tasks.named<Jar>("jar") {
                     manifest {
                         val attributeMap = mutableMapOf<String, String>()
@@ -232,15 +219,9 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
         val minecraft = target.extensions.getByType<MinecraftExtension>()
         check(minecraft.forgeVersion.get() == ext.forgeVersion.get()) {
             "Unsupported forge version ${ext.forgeVersion.get()} for RetroFuturaGradle, expected ${minecraft.forgeVersion.get()} " +
-                    "RFG only supports 1 version for 1.7.10 and another one for 1.12.2"
+                    "RetroFuturaGradle only supports 1 version for 1.7.10 and another one for 1.12.2"
         }
         super.finalize(target)
-    }
-
-    override fun applyMetadataStringReplacements(target: Project): TaskProvider<ProcessResources> {
-        val generateModMetadata = super.applyMetadataStringReplacements(target)
-
-        return generateModMetadata
     }
 
     override fun applyUnitTesting(target: Project, testFrameworkConfigure: Action<in JUnitPlatformOptions>) {
