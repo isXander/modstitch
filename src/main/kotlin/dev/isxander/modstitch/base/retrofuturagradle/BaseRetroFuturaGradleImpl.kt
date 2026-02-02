@@ -364,9 +364,3 @@ class BaseRetroFuturaGradleImpl : BaseCommonImpl<BaseRetroFuturaGradleExtension>
         }
     }
 }
-
-
-
-
-
-
