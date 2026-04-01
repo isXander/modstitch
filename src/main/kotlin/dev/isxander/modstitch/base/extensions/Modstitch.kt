@@ -45,6 +45,7 @@ interface ModstitchExtension {
     /**
      * The Java version to target.
      *
+     * - Defaults to `25` if [minecraftVersion] >= `26.1`.
      * - Defaults to `21` if [minecraftVersion] >= `1.20.5`.
      * - Defaults to `17` if [minecraftVersion] >= `1.18`.
      * - Defaults to `16` if [minecraftVersion] >= `1.17`.
