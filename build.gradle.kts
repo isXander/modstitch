@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.isxander.modstitch"
-version = "0.8.4"
+version = "0.8.5"
 
 repositories {
     mavenCentral()
