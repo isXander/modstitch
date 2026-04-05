@@ -1,14 +1,11 @@
 package dev.isxander.modstitch.base
 
-import dev.isxander.modstitch.*
-import dev.isxander.modstitch.base.extensions.*
-import dev.isxander.modstitch.util.Platform
-import dev.isxander.modstitch.util.afterSuccessfulEvaluate
-import dev.isxander.modstitch.util.mainSourceSet
-import dev.isxander.modstitch.util.platform
-import dev.isxander.modstitch.util.printVersion
+import dev.isxander.modstitch.PlatformPlugin
+import dev.isxander.modstitch.base.extensions.ModstitchExtension
+import dev.isxander.modstitch.base.extensions.ModstitchExtensionImpl
+import dev.isxander.modstitch.base.extensions.modstitch
+import dev.isxander.modstitch.util.*
 import org.gradle.api.Action
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.dsl.RepositoryHandler
@@ -20,6 +17,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.*
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.ide.idea.model.IdeaModel
@@ -75,7 +73,10 @@ abstract class BaseCommonImpl<T : Any>(
         applyMetadataStringReplacements(target)
 
         // Create modstitch remap configurations
-        createProxyConfigurations(target, target.extensions.getByType<SourceSetContainer>().getByName(SourceSet.MAIN_SOURCE_SET_NAME))
+        createProxyConfigurations(
+            target,
+            target.extensions.getByType<SourceSetContainer>().getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+        )
 
         // Jar-in-jar support
         target.configurations.create("modstitchJiJ") {
@@ -89,8 +90,10 @@ abstract class BaseCommonImpl<T : Any>(
             group = "modstitch/internal"
             dependsOn("processResources")
 
-            source(msExt.modLoaderManifest.map { listOf(project.mainSourceSet!!.output.resourcesDir!!.resolve(it)) }.orElse(listOf()))
-            mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } }.zip(msExt.mixin.addMixinsToModManifest) { configs, addToManifest -> if (!addToManifest) emptyList() else configs })
+            source(msExt.modLoaderManifest.map { listOf(project.mainSourceSet!!.output.resourcesDir!!.resolve(it)) }
+                .orElse(listOf()))
+            mixins.value(target.provider { msExt.mixin.configs.map { it.resolved() } }
+                .zip(msExt.mixin.addMixinsToModManifest) { configs, addToManifest -> if (!addToManifest) emptyList() else configs })
             classTweakers.value(msExt.classTweakerName.zip(msExt.classTweaker) { n, _ -> listOf(n) }.orElse(listOf()))
         }.also { target.tasks["processResources"].finalizedBy(it) }
     }
@@ -147,17 +150,13 @@ abstract class BaseCommonImpl<T : Any>(
         }
 
         target.extensions.configure<JavaPluginExtension> {
-            target.afterSuccessfulEvaluate {
-                val requestedJavaVersion = target.modstitch.javaVersion.orNull
-
-                if (requestedJavaVersion != null) {
-                    JavaVersion.toVersion(requestedJavaVersion).let {
-                        targetCompatibility = it
-                        sourceCompatibility = it
-                    }
-                } else {
-                    target.logger.warn("No Java version specified in modstitch configuration. Not applying any Java version settings.")
-                }
+            toolchain.languageVersion.set(
+                target.modstitch.javaVersion.map { JavaLanguageVersion.of(it) }
+            )
+        }
+        target.afterSuccessfulEvaluate {
+            if (!target.modstitch.javaVersion.isPresent) {
+                target.logger.warn("No Java version specified in modstitch configuration. Not applying any Java version settings.")
             }
         }
     }
@@ -244,7 +243,12 @@ abstract class BaseCommonImpl<T : Any>(
             createProxyConfigurations(target, FutureNamedDomainObjectProvider.from(target.configurations, it))
         }
     }
-    abstract fun createProxyConfigurations(target: Project, configuration: FutureNamedDomainObjectProvider<Configuration>, defer: Boolean = false)
+
+    abstract fun createProxyConfigurations(
+        target: Project,
+        configuration: FutureNamedDomainObjectProvider<Configuration>,
+        defer: Boolean = false,
+    )
 
     abstract fun configureJiJConfiguration(target: Project, configuration: Configuration)
 

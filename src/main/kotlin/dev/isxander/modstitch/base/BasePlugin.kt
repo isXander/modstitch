@@ -7,6 +7,7 @@ import dev.isxander.modstitch.base.loom.BaseLoomImpl
 import dev.isxander.modstitch.base.loom.LoomType
 import dev.isxander.modstitch.base.moddevgradle.BaseModDevGradleImpl
 import dev.isxander.modstitch.base.moddevgradle.MDGType
+import dev.isxander.modstitch.base.retrofuturagradle.BaseRetroFuturaGradleImpl
 import dev.isxander.modstitch.util.RegisteredGradlePlugin
 
 @RegisteredGradlePlugin
@@ -17,6 +18,7 @@ class BasePlugin : ModstitchExtensionPlugin("base", platforms) {
             Platform.LoomRemap to BaseLoomImpl(LoomType.Remap),
             Platform.MDG to BaseModDevGradleImpl(MDGType.Regular),
             Platform.MDGLegacy to BaseModDevGradleImpl(MDGType.Legacy),
+            Platform.RFG to BaseRetroFuturaGradleImpl()
         )
     }
 }

@@ -85,7 +85,8 @@ internal data class ClassTweaker(
                             .append(' ')
                             .append(entry.fieldName)
                             .append(' ')
-                            .appendLine(entry.fieldDescriptor ?: "")
+                            .appendLine()
+                        // Forge's AccessTransformers don't use field descriptors
                         is ClassTweakerEntry.AccessModifier.Method -> writer
                             .append(' ')
                             .append(entry.methodName)
